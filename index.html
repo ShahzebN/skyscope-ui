@@ -47,20 +47,20 @@
     .progress-plane-icon { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
     .progress-stats-row { display: flex; justify-content: space-between; font-size: 10px; color: #8b949e; font-weight: 600; }
 
-    /* Compact Top 5 Busiest Airports Panel (Right Side of Map) */
-    #busiest-airports-panel { position: absolute; top: 15px; right: 15px; width: 280px; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(12px); z-index: 1000; border-radius: 10px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; }
-    .busiest-header { background: #161b22; padding: 10px 12px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800; color: #fff; letter-spacing: 0.4px; }
-    .busiest-live-badge { background: #e3b341; color: #0c0f12; font-size: 8px; font-weight: 900; padding: 2px 5px; border-radius: 3px; }
-    .busiest-list { padding: 5px; }
-    .busiest-item { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 8px 10px; margin-bottom: 5px; cursor: pointer; transition: 0.15s; display: flex; justify-content: space-between; align-items: center; }
+    /* Busiest Airports Panel (Right Side of Map) */
+    #busiest-airports-panel { position: absolute; top: 15px; right: 15px; width: 300px; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(12px); z-index: 1000; border-radius: 10px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; }
+    .busiest-header { background: #161b22; padding: 12px 14px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 0.4px; }
+    .busiest-live-badge { background: #e3b341; color: #0c0f12; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
+    .busiest-list { max-height: calc(100vh - 160px); overflow-y: auto; padding: 6px; }
+    .busiest-item { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; display: flex; justify-content: space-between; align-items: center; }
     .busiest-item:hover { border-color: #00d2ff; background: #161b22; }
-    .busiest-rank { font-size: 12px; font-weight: 900; color: #8b949e; margin-right: 8px; width: 18px; }
-    .busiest-info { flex-grow: 1; overflow: hidden; }
-    .busiest-name { font-size: 12px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .busiest-sub { font-size: 10px; color: #8b949e; margin-top: 1px; }
-    .busiest-count-wrap { text-align: right; margin-left: 8px; }
-    .busiest-count { font-size: 13px; font-weight: 900; color: #e3b341; }
-    .busiest-count-lbl { font-size: 8px; color: #7f8c8d; text-transform: uppercase; }
+    .busiest-rank { font-size: 14px; font-weight: 900; color: #8b949e; margin-right: 10px; width: 20px; }
+    .busiest-info { flex-grow: 1; }
+    .busiest-name { font-size: 13px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px; }
+    .busiest-sub { font-size: 11px; color: #8b949e; margin-top: 2px; }
+    .busiest-count-wrap { text-align: right; }
+    .busiest-count { font-size: 14px; font-weight: 900; color: #e3b341; }
+    .busiest-count-lbl { font-size: 9px; color: #7f8c8d; text-transform: uppercase; }
 
     /* Live Lightning Strike Marker Pin */
     .lightning-pin { width: 12px; height: 12px; background: #ff3300; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 10px #ff3300, 0 0 20px #ff3300; animation: pulse 1.5s infinite; }
@@ -156,7 +156,6 @@
       #sidebar { width: calc(100vw - 30px); height: calc(100vh - 150px); }
       #toggle-btn { left: calc(100vw - 55px); }
       #toggle-btn.collapsed { left: 15px; }
-      #busiest-airports-panel { top: 65px; right: 10px; width: 230px; font-size: 10px; }
       #bottom-dock { bottom: 10px; padding: 4px 10px; gap: 15px; }
       .dock-item { font-size: 9px; padding: 4px 6px; }
       .dock-icon { font-size: 15px; }
@@ -228,7 +227,7 @@
     </div>
   </div>
 
-  <!-- Top 5 Busiest Airports Panel (Right Side of Map) -->
+  <!-- Busiest Airports Panel (Right Side of Map) -->
   <div id="busiest-airports-panel">
     <div class="busiest-header">
       <span>Busiest Airports</span>
@@ -556,10 +555,6 @@
       filterFlights();
     });
 
-    map.on('moveend', () => {
-      filterFlights();
-    });
-
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
     function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
@@ -607,7 +602,7 @@
       `;
     }
 
-    // Top 5 Busiest Airports Dynamic Update
+    // Compute live busiest airports dynamically from active traffic counts
     function updateBusiestAirports() {
       let counts = {};
       flightDataStore.forEach(ac => {
@@ -624,11 +619,11 @@
           }
         }
         return { icao, name, count: counts[icao] };
-      }).sort((a, b) => b.count - a.count).slice(0, 5); // Strictly Top 5
+      }).sort((a, b) => b.count - a.count).slice(0, 6);
 
       let listEl = document.getElementById('busiestAirportsList');
       if (sorted.length === 0) {
-        listEl.innerHTML = '<div style="color:#7f8c8d; text-align:center; padding:12px; font-size:11px;">Analyzing Global Hubs...</div>';
+        listEl.innerHTML = '<div style="color:#7f8c8d; text-align:center; padding:15px; font-size:12px;">Analyzing Global Hubs...</div>';
         return;
       }
 
@@ -639,8 +634,8 @@
         div.innerHTML = `
           <div class="busiest-rank">#${index + 1}</div>
           <div class="busiest-info">
-            <div class="busiest-name">${item.name}</div>
-            <div class="busiest-sub">(${item.icao}) Active Hub Traffic</div>
+            <div class="busiest-name">${item.name} <span style="color:#00d2ff; font-size:11px;">(${item.icao})</span></div>
+            <div class="busiest-sub">Active Hub Traffic</div>
           </div>
           <div class="busiest-count-wrap">
             <div class="busiest-count">${item.count * 12}</div>
@@ -659,7 +654,7 @@
 
     function fetchRadarData() {
       fetch(FIREBASE_ENDPOINT)
-        .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline (Check CORS / Firebase Rules)'); return res.json(); })
+        .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline'); return res.json(); })
         .then(data => {
         let activeFlights = new Set();
         flightDataStore = [];
@@ -750,13 +745,6 @@
     }
 
     function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
-      const bounds = map.getBounds();
-      // If bounds are not yet initialized or too small, don't filter out
-      if (bounds && bounds.isValid() && !bounds.contains([item.lat, item.lng])) {
-        // Allow if zoomed out wide or if explicitly searched
-        if (map.getZoom() > 3 && generalFilter === '' && fromQuery === '' && toQuery === '') return false;
-      }
-
       const matchesGeneral = generalFilter === '' ||
         item.flight.toUpperCase().includes(generalFilter) ||
         item.type.toUpperCase().includes(generalFilter) ||
@@ -794,6 +782,7 @@
       let speedUnit = document.getElementById('set-speed').value;
       let vspeedUnit = document.getElementById('set-vspeed').value;
       let altUnit = document.getElementById('set-alt').value;
+      listContainer.innerHTML = '';
 
       let filtered = flightDataStore.filter(item =>
         matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo)
@@ -827,20 +816,11 @@
       }
 
       if (filtered.length === 0) {
-        listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found in view.</p>';
+        listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>';
         return;
       }
 
-      let existingCards = {};
-      Array.from(listContainer.children).forEach(child => {
-        if (child.id && child.id.startsWith('card-')) {
-          existingCards[child.id.replace('card-', '')] = child;
-        }
-      });
-
       let displayLimit = filtered.slice(0, 50);
-      let newFrag = document.createDocumentFragment();
-
       displayLimit.forEach(ac => {
         let displaySpeed = ac.speedBase; let speedLabel = 'kts';
         if (speedUnit === 'kmh') { displaySpeed = Math.round(ac.speedBase * 1.852); speedLabel = 'km/h'; }
@@ -883,27 +863,13 @@
           distRemStr = `${Math.round(remDist * multiplier)} ${unitLabel}`;
         }
 
-        let card = existingCards[ac.flight];
-        if (!card) {
-          card = document.createElement('div');
-          card.className = 'flight-card';
-          card.id = 'card-' + ac.flight;
-          card.onclick = () => {
-            map.setView([ac.lat, ac.lng], 6);
-            selectFlight(ac.flight);
-            if (window.innerWidth <= 600) toggleSidebar();
-            if (markers[ac.flight]) markers[ac.flight].openPopup();
-          };
-        }
-
+        let card = document.createElement('div');
+        card.className = 'flight-card'; card.id = 'card-' + ac.flight;
         if (ac.flight === selectedFlightId) {
           card.style.borderColor = '#00d2ff';
           card.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.35)';
-        } else {
-          card.style.borderColor = '#30363d';
-          card.style.boxShadow = 'none';
         }
-
+        
         card.innerHTML = `
           <div class="flight-title">
             <div style="display:flex; align-items:center;">
@@ -940,16 +906,19 @@
           </div>
         `;
         
-        newFrag.appendChild(card);
-
+        card.onclick = () => {
+          map.setView([ac.lat, ac.lng], 6);
+          selectFlight(ac.flight);
+          if (window.innerWidth <= 600) toggleSidebar();
+          if (markers[ac.flight]) markers[ac.flight].openPopup();
+        };
+        listContainer.appendChild(card);
+        
         if (!hidePhoto && ac.reg && ac.reg !== '') {
           if (photoCache[ac.flight]) { showPhoto(ac.flight, photoCache[ac.flight]); }
           else { fetchAircraftPhoto(ac.flight, ac.reg); }
         }
       });
-
-      listContainer.innerHTML = '';
-      listContainer.appendChild(newFrag);
     }
 
     function fetchAircraftPhoto(flight, reg) {
