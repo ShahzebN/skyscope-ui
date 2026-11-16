@@ -12,7 +12,7 @@
     
     /* Custom Dark Map Popup Styling */
     .leaflet-popup-content-wrapper { background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); color: #e1e1e1; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.85); padding: 0; }
-    .leaflet-popup-content { margin: 12px 14px; min-width: 210px; font-size: 12px; line-height: 1.4; }
+    .leaflet-popup-content { margin: 12px 14px; min-width: 215px; font-size: 12px; line-height: 1.4; }
     .leaflet-popup-tip { background: rgba(15, 18, 23, 0.96); border: 1px solid #30363d; }
     .leaflet-container a.leaflet-popup-close-button { color: #8b949e; top: 8px; right: 8px; font-size: 16px; }
     .leaflet-container a.leaflet-popup-close-button:hover { color: #00d2ff; }
@@ -26,10 +26,11 @@
     .popup-val { font-size: 11px; font-weight: bold; color: #fff; }
 
     /* Airport Endpoint Pins for Route Line */
-    .airport-pin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.9); }
+    .airport-pin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.95); }
     .airport-pin.origin { background: #00d2ff; }
-    .airport-pin.dest { background: #3fb950; box-shadow: 0 0 8px rgba(63, 185, 80, 0.9); }
+    .airport-pin.dest { background: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.95); }
     .airport-tooltip { background: #0d1117 !important; color: #00d2ff !important; border: 1px solid #30363d !important; font-weight: bold !important; font-size: 10px !important; padding: 2px 6px !important; border-radius: 4px !important; box-shadow: 0 2px 6px rgba(0,0,0,0.8) !important; }
+    .airport-tooltip.dest-lbl { color: #ffd700 !important; }
     .airport-tooltip::before { display: none !important; }
 
     #sidebar { position: absolute; top: 15px; left: 15px; width: 340px; height: calc(100vh - 90px); background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); z-index: 1000; border-radius: 12px; border: 1px solid #2a323d; box-shadow: 0 12px 35px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease-in-out; }
@@ -114,7 +115,7 @@
     <div class="sidebar-content">
       <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, route, squawk..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
+        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, route, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
         <div id="search-shortcuts">
           <div class="shortcut-category">Quick Filters</div>
           <div class="shortcut-item" onmousedown="setSearchQuery('OPIS')"><span>📍 Origin/Dest (e.g. OPIS)</span><span style="color:#7f8c8d;">Route</span></div>
@@ -173,7 +174,7 @@
       <div class="setting-group">
         <label>Units & Measurements</label>
         <div class="setting-row"><span>Aircraft Speed</span><select id="set-speed" class="setting-select" style="width:120px;" onchange="filterFlights()"><option value="kts">Knots</option><option value="kmh">Km/h</option><option value="mph">Mph</option></select></div>
-        <div class="setting-row"><span>Vertical Speed</span><select id="set-vspeed" class="setting-select" style="width:120px;"><option>Fpm</option><option>M/s</option></select></div>
+        <div class="setting-row"><span>Vertical Speed</span><select id="set-vspeed" class="setting-select" style="width:120px;" onchange="filterFlights()"><option value="Fpm">Fpm</option><option value="M/s">M/s</option></select></div>
         <div class="setting-row"><span>Wind Speed</span><select id="set-wind" class="setting-select" style="width:120px;"><option>Knots</option><option>Km/h</option><option>Mph</option><option>M/s</option></select></div>
         <div class="setting-row"><span>Barometric Altitude</span><select id="set-alt" class="setting-select" style="width:120px;" onchange="filterFlights()"><option value="ft">Feet</option><option value="m">Meters</option></select></div>
         <div class="setting-row"><span>Distance</span><select id="set-dist" class="setting-select" style="width:120px;"><option>Nm</option><option>Km</option><option>Miles</option></select></div>
@@ -212,7 +213,6 @@
       'BCS': 'European Air Transport Leipzig', 'CLX': 'Cargolux', 'GTI': 'Atlas Air', 'ABW': 'AirBridgeCargo'
     };
 
-    // Core fallback airports (ICAO + Lat/Lon) + Global IATA->ICAO & Coordinate lookup
     const airportDb = {
       'ISB': { icao: 'OPIS', lat: 33.549, lon: 72.825 }, 'LHE': { icao: 'OPLA', lat: 31.521, lon: 74.403 },
       'KHI': { icao: 'OPKC', lat: 24.906, lon: 67.160 }, 'PEW': { icao: 'OPPS', lat: 33.993, lon: 71.514 },
@@ -261,7 +261,6 @@
     const icaoCoords = {};
     for (const k in airportDb) { icaoCoords[airportDb[k].icao] = [airportDb[k].lat, airportDb[k].lon]; }
 
-    // Asynchronously load full worldwide 29,000+ airport database for complete IATA->ICAO & route lines
     fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json')
       .then(r => r.json())
       .then(allAirports => {
@@ -341,28 +340,35 @@
         // Solid cyan line from Origin Airport to Aircraft (flown path)
         L.polyline([origCoords, planeCoords], {
           color: '#00d2ff',
-          weight: 2.5,
-          opacity: 0.9
+          weight: 3,
+          opacity: 0.95
         }).addTo(routeLayerGroup);
 
-        const origIcon = L.divIcon({ className: '', html: '<div class="airport-pin origin"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+        const origIcon = L.divIcon({ className: '', html: '<div class="airport-pin origin"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
         L.marker(origCoords, { icon: origIcon })
-          .bindTooltip(`DEP: ${ac.depIcao}`, { permanent: true, direction: 'top', offset: [0, -6], className: 'airport-tooltip' })
+          .bindTooltip(`DEP: ${ac.depIcao}`, { permanent: true, direction: 'top', offset: [0, -7], className: 'airport-tooltip' })
           .addTo(routeLayerGroup);
       }
 
       if (destCoords) {
-        // Dashed green/cyan line from Aircraft to Destination Airport (remaining path)
+        // High-contrast dark backing + bright gold/yellow dashed line to Destination Airport
         L.polyline([planeCoords, destCoords], {
-          color: '#3fb950',
-          weight: 2,
-          opacity: 0.85,
-          dashArray: '6, 8'
+          color: '#000000',
+          weight: 5,
+          opacity: 0.65,
+          dashArray: '8, 10'
         }).addTo(routeLayerGroup);
 
-        const destIcon = L.divIcon({ className: '', html: '<div class="airport-pin dest"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+        L.polyline([planeCoords, destCoords], {
+          color: '#ffd700',
+          weight: 3,
+          opacity: 1.0,
+          dashArray: '8, 10'
+        }).addTo(routeLayerGroup);
+
+        const destIcon = L.divIcon({ className: '', html: '<div class="airport-pin dest"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
         L.marker(destCoords, { icon: destIcon })
-          .bindTooltip(`ARR: ${ac.arrIcao}`, { permanent: true, direction: 'top', offset: [0, -6], className: 'airport-tooltip' })
+          .bindTooltip(`ARR: ${ac.arrIcao}`, { permanent: true, direction: 'top', offset: [0, -7], className: 'airport-tooltip dest-lbl' })
           .addTo(routeLayerGroup);
       }
     }
@@ -379,7 +385,8 @@
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
 
     function buildPopupHtml(ac) {
-      const sqColor = (ac.squawk === '7700' || ac.squawk === '7600' || ac.squawk === '7500') ? '#ff4d4d' : '#e3b341';
+      const vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
+      const vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
       return `
         <div class="popup-header">
           <div>
@@ -392,8 +399,8 @@
         <div class="popup-grid">
           <div class="popup-cell"><div class="popup-lbl">Altitude</div><div class="popup-val">${ac.altBase === 'GND' ? 'GND' : ac.altBase + ' ft'}</div></div>
           <div class="popup-cell"><div class="popup-lbl">Speed</div><div class="popup-val">${ac.speedBase} kts</div></div>
+          <div class="popup-cell"><div class="popup-lbl">Vert Speed</div><div class="popup-val" style="color:${vsColor};">${vsPrefix}${ac.vSpeedBase} fpm</div></div>
           <div class="popup-cell"><div class="popup-lbl">Reg</div><div class="popup-val">${ac.reg || 'N/A'}</div></div>
-          <div class="popup-cell"><div class="popup-lbl">Squawk</div><div class="popup-val" style="color:${sqColor};">${ac.squawk}</div></div>
         </div>
       `;
     }
@@ -426,14 +433,14 @@
           let heading = ac[3] || 0;
           let altBase = ac[4] || 0;
           let speedBase = ac[5] || 0;
-          let squawk = (ac[6] && ac[6] !== '') ? String(ac[6]).padStart(4, '0') : '----';
+          let vSpeedBase = ac[15] || 0;
           let type = ac[8] || 'Unknown';
           let reg = ac[9] || '';
           let depIcao = resolveIcao(ac[11]);
           let arrIcao = resolveIcao(ac[12]);
           if (altBase < 50) altBase = 'GND';
 
-          const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, heading, squawk, reg, depIcao, arrIcao, type, lat, lng };
+          const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, vSpeedBase, heading, reg, depIcao, arrIcao, type, lat, lng };
           flightDataStore.push(acObj);
 
           let popupContent = buildPopupHtml(acObj);
@@ -481,6 +488,7 @@
       let filter = document.getElementById('searchBox').value.toUpperCase();
       let hidePhoto = document.getElementById('set-hidephoto').checked;
       let speedUnit = document.getElementById('set-speed').value;
+      let vspeedUnit = document.getElementById('set-vspeed').value;
       let altUnit = document.getElementById('set-alt').value;
       listContainer.innerHTML = '';
 
@@ -490,8 +498,7 @@
         item.opCode.toUpperCase().includes(filter) ||
         item.reg.toUpperCase().includes(filter) ||
         item.depIcao.toUpperCase().includes(filter) ||
-        item.arrIcao.toUpperCase().includes(filter) ||
-        item.squawk.includes(filter)
+        item.arrIcao.toUpperCase().includes(filter)
       );
 
       flightDataStore.forEach(item => {
@@ -502,8 +509,7 @@
             item.opCode.toUpperCase().includes(filter) ||
             item.reg.toUpperCase().includes(filter) ||
             item.depIcao.toUpperCase().includes(filter) ||
-            item.arrIcao.toUpperCase().includes(filter) ||
-            item.squawk.includes(filter);
+            item.arrIcao.toUpperCase().includes(filter);
           if (matches) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
@@ -538,7 +544,14 @@
         if (ac.altBase !== 'GND' && altUnit === 'm') { displayAlt = Math.round(ac.altBase / 3.28084); altLabel = 'm'; }
         if (ac.altBase === 'GND') altLabel = '';
 
-        const sqColor = (ac.squawk === '7700' || ac.squawk === '7600' || ac.squawk === '7500') ? '#ff4d4d' : '#e3b341';
+        let vsVal = ac.vSpeedBase;
+        let vsLabel = 'fpm';
+        if (vspeedUnit === 'M/s') {
+          vsVal = (ac.vSpeedBase * 0.00508).toFixed(1);
+          vsLabel = 'm/s';
+        }
+        let vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
+        let vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
 
         let card = document.createElement('div');
         card.className = 'flight-card'; card.id = 'card-' + ac.flight;
@@ -564,7 +577,7 @@
             <div class="stat-box"><div class="stat-label">Altitude</div><div class="stat-val">${displayAlt} ${altLabel}</div></div>
             <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-val">${displaySpeed} ${speedLabel}</div></div>
             <div class="stat-box"><div class="stat-label">Heading</div><div class="stat-val">${ac.heading}&deg;</div></div>
-            <div class="stat-box"><div class="stat-label">Squawk</div><div class="stat-val" style="color:${sqColor};">${ac.squawk}</div></div>
+            <div class="stat-box"><div class="stat-label">Vert Speed</div><div class="stat-val" style="color:${vsColor};">${vsPrefix}${vsVal} ${vsLabel}</div></div>
             <div class="stat-box" style="grid-column: span 2;"><div class="stat-label">Route (ICAO)</div><div class="stat-val" style="color:#00d2ff; font-size:11px;">${ac.depIcao} &rarr; ${ac.arrIcao}</div></div>
           </div>
         `;
