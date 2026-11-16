@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyScope Pro - ME & Pakistan</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; padding: 0; background: #0c0f12; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #e1e1e1; overflow: hidden; }
+    #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    .leaflet-layer, .leaflet-control-zoom { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
+    
+    #sidebar { position: absolute; top: 15px; left: 15px; width: 340px; height: calc(100vh - 90px); background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); z-index: 1000; border-radius: 12px; border: 1px solid #2a323d; box-shadow: 0 12px 35px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease-in-out; }
+    #sidebar.collapsed { transform: translateX(-370px); }
+    
+    #toggle-btn { position: absolute; top: 15px; left: 365px; z-index: 1001; background: #161b22; color: #00d2ff; border: 1px solid #2a323d; border-radius: 8px; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.6); transition: left 0.3s ease-in-out; }
+    #toggle-btn.collapsed { left: 15px; }
+
+    #bottom-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 35px; padding: 6px 16px; display: flex; gap: 20px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
+    .dock-item { display: flex; flex-direction: column; align-items: center; color: #c9d1d9; font-size: 11px; cursor: pointer; transition: 0.2s; padding: 6px 10px; border-radius: 8px; }
+    .dock-item:hover { color: #00d2ff; background: rgba(255,255,255,0.05); }
+    .dock-icon { font-size: 18px; margin-bottom: 2px; }
+
+    #settings-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+    .modal-content { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 420px; max-height: 85vh; overflow-y: auto; padding: 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); color: #c9d1d9; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 12px; margin-bottom: 15px; }
+    .modal-header h3 { margin: 0; color: #00d2ff; font-size: 18px; }
+    .close-btn { background: none; border: none; color: #8b949e; font-size: 20px; cursor: pointer; }
+    .close-btn:hover { color: #fff; }
+    .setting-group { margin-bottom: 15px; font-size: 13px; }
+    .setting-group label { display: block; color: #8b949e; margin-bottom: 5px; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+    .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .setting-select { background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 6px 10px; border-radius: 6px; width: 100%; font-size: 12px; }
+    .setting-desc { font-size: 11px; color: #6e7681; margin-top: 2px; }
+
+    #weather-panel { position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: rgba(22, 27, 34, 0.95); border: 1px solid #30363d; border-radius: 10px; padding: 12px; z-index: 2000; display: none; box-shadow: 0 8px 25px rgba(0,0,0,0.7); width: 220px; }
+    .weather-option { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; cursor: pointer; color: #c9d1d9; }
+    .lightning-pin { width: 12px; height: 12px; background: #ff3300; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 10px #ff3300, 0 0 20px #ff3300; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.8; } }
+
+    .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #2a323d; background: #161b22; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .sidebar-header h2 { color: #00d2ff; margin: 0; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; }
+    
+    .search-container { position: relative; margin-bottom: 15px; }
+    .search-input { width: 100%; box-sizing: border-box; background: #161b22; border: 1px solid #30363d; color: #fff; padding: 10px 14px 10px 36px; border-radius: 8px; font-size: 13px; }
+    .search-input:focus { outline: none; border-color: #00d2ff; }
+    .search-icon { position: absolute; left: 12px; top: 11px; color: #7f8c8d; font-size: 14px; }
+    
+    #search-shortcuts { position: absolute; top: 46px; left: 0; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 2000; display: none; max-height: 250px; overflow-y: auto; }
+    .shortcut-category { padding: 8px 12px; font-size: 10px; color: #00d2ff; background: #21262d; text-transform: uppercase; font-weight: bold; border-bottom: 1px solid #30363d; }
+    .shortcut-item { padding: 9px 14px; font-size: 13px; color: #c9d1d9; cursor: pointer; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; }
+    .shortcut-item:hover { background: #30363d; color: #fff; }
+
+    .sidebar-content { padding: 18px; overflow-y: auto; flex-grow: 1; }
+    .flight-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: 0.15s; }
+    .flight-card:hover { border-color: #00d2ff; background: #1c2128; }
+    .flight-title { font-size: 15px; font-weight: bold; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .airline-logo { width: 26px; height: auto; vertical-align: middle; margin-right: 8px; border-radius: 3px; background: #fff; padding: 1px; }
+    
+    .reg-subtext { font-size: 12px; color: #8b949e; margin-left: 34px; margin-top: 4px; font-weight: bold; }
+    
+    .ac-photo-container { margin-top: 10px; width: 100%; height: 120px; background: #0d1117; border-radius: 6px; overflow: hidden; display: none; position: relative; border: 1px solid #30363d; }
+    .ac-photo { width: 100%; height: 100%; object-fit: cover; }
+    .ac-photo-loading { font-size: 11px; color: #7f8c8d; text-align: center; line-height: 120px; }
+
+    .flight-details { font-size: 12px; color: #8b949e; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .stat-box { background: #0d1117; padding: 5px 8px; border-radius: 5px; border: 1px solid #21262d; }
+    .stat-label { font-size: 9px; color: #7f8c8d; text-transform: uppercase; }
+    .stat-val { font-size: 12px; font-weight: bold; color: #fff; }
+    .status-bar { padding: 8px 16px; background: #161b22; border-top: 1px solid #2a323d; font-size: 11px; color: #8b949e; display: flex; justify-content: space-between; }
+    #status { color: #3fb950; font-weight: bold; }
+    .plane-icon { font-size: 20px; text-align: center; line-height: 20px; transition: transform 0.4s ease-in-out; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+    
+    @media (max-width: 600px) {
+      #sidebar { width: calc(100vw - 30px); height: calc(100vh - 150px); }
+      #toggle-btn { left: calc(100vw - 55px); }
+      #toggle-btn.collapsed { left: 15px; }
+      #bottom-dock { bottom: 10px; padding: 4px 10px; gap: 15px; }
+      .dock-item { font-size: 9px; padding: 4px 6px; }
+      .dock-icon { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <button id="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <h2>SKYSCOPE PRO</h2>
+      <span id="ac-count" style="background: #00d2ff; color: #0c0f12; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">0</span>
+    </div>
+    <div class="sidebar-content">
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, route, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
+        <div id="search-shortcuts">
+          <div class="shortcut-category">Quick Filters</div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('OPIS')"><span>📍 Origin/Dest (e.g. OPIS)</span><span style="color:#7f8c8d;">Route</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('UAE')"><span>🛫 Airline (e.g. UAE)</span><span style="color:#7f8c8d;">Airline</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('A388')"><span>🛩️ Aircraft Type (e.g. A388)</span><span style="color:#7f8c8d;">Type</span></div>
+        </div>
+      </div>
+      <div id="flight-list">
+        <p style="color: #7f8c8d; text-align: center; margin-top: 40px;">Scanning Airspace...</p>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span>Status: <span id="status" style="color: #ff9900;">Connecting...</span></span>
+      <span id="last-update">---</span>
+    </div>
+  </div>
+
+  <div id="bottom-dock">
+    <div class="dock-item" onclick="openSettings()"><span class="dock-icon">⚙️</span>Settings</div>
+    <div class="dock-item" onclick="toggleWeatherMenu()"><span class="dock-icon">⛅</span>Weather</div>
+    <div class="dock-item" onclick="document.getElementById('searchBox').focus()"><span class="dock-icon">🎛️</span>Filters</div>
+  </div>
+
+  <div id="weather-panel">
+    <div style="font-size:11px; color:#00d2ff; font-weight:bold; margin-bottom:8px; text-transform:uppercase;">Weather Layers</div>
+    <label class="weather-option"><input type="checkbox" id="chk-clouds" onchange="toggleWeatherLayer('clouds')"> Cloud Overlays</label>
+    <label class="weather-option"><input type="checkbox" id="chk-rain" onchange="toggleWeatherLayer('rain')"> Rain Overlays</label>
+    <label class="weather-option"><input type="checkbox" id="chk-wind" onchange="toggleWeatherLayer('wind')"> Wind Stream</label>
+    <label class="weather-option"><input type="checkbox" id="chk-lightning" onchange="toggleWeatherLayer('lightning')"> Lightning Strikes</label>
+  </div>
+
+  <div id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Radar Settings</h3>
+        <button class="close-btn" onclick="closeSettings()">&times;</button>
+      </div>
+      <div class="setting-group">
+        <label>Display Toggles</label>
+        <div class="setting-row"><span>Show trail tooltip</span><input type="checkbox" id="set-tooltip" checked></div>
+        <div class="setting-desc">At-a-glance altitude and speed info on track hover.</div>
+        <div class="setting-row" style="margin-top:10px;"><span>Hide aircraft photo</span><input type="checkbox" id="set-hidephoto" onchange="filterFlights()"></div>
+      </div>
+      <div class="setting-group">
+        <label>Time Zone & Clock</label>
+        <select class="setting-select" id="set-timezone" onchange="updateClock()">
+          <option value="utc">UTC</option>
+          <option value="local">Local airport time</option>
+        </select>
+        <div style="margin-top:8px;"></div>
+        <select class="setting-select" id="set-clock" onchange="updateClock()">
+          <option value="24">24-hour clock</option>
+          <option value="12" selected>12-hour clock</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Units & Measurements</label>
+        <div class="setting-row"><span>Aircraft Speed</span><select id="set-speed" class="setting-select" style="width:120px;" onchange="filterFlights()"><option value="kts">Knots</option><option value="kmh">Km/h</option><option value="mph">Mph</option></select></div>
+        <div class="setting-row"><span>Vertical Speed</span><select id="set-vspeed" class="setting-select" style="width:120px;"><option>Fpm</option><option>M/s</option></select></div>
+        <div class="setting-row"><span>Wind Speed</span><select id="set-wind" class="setting-select" style="width:120px;"><option>Knots</option><option>Km/h</option><option>Mph</option><option>M/s</option></select></div>
+        <div class="setting-row"><span>Barometric Altitude</span><select id="set-alt" class="setting-select" style="width:120px;" onchange="filterFlights()"><option value="ft">Feet</option><option value="m">Meters</option></select></div>
+        <div class="setting-row"><span>Distance</span><select id="set-dist" class="setting-select" style="width:120px;"><option>Nm</option><option>Km</option><option>Miles</option></select></div>
+      </div>
+      <button onclick="closeSettings()" style="width:100%; background:#00d2ff; color:#0c0f12; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">Save Preferences</button>
+    </div>
+  </div>
+  
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const airlines = {
+      'CPA': 'Cathay Pacific', 'PAL': 'Philippine Airlines', 'UAE': 'Emirates', 'QTR': 'Qatar Airways', 
+      'PIA': 'Pakistan Int. Airlines', 'THY': 'Turkish Airlines', 'AIC': 'Air India', 'IGO': 'IndiGo', 
+      'VTI': 'Vistara', 'SEJ': 'SpiceJet', 'ABQ': 'Airblue', 'SVA': 'Saudia', 'ETD': 'Etihad Airways', 
+      'OMA': 'Oman Air', 'KAC': 'Kuwait Airways', 'GFA': 'Gulf Air', 'FDB': 'flydubai', 'ABY': 'Air Arabia', 
+      'JZR': 'Jazeera Airways', 'BBC': 'Biman Bangladesh', 'ALK': 'SriLankan Airlines', 'SIA': 'Singapore Airlines',
+      'MAS': 'Malaysia Airlines', 'BAW': 'British Airways', 'AFR': 'Air France', 'DLH': 'Lufthansa',
+      'KLM': 'KLM', 'QFA': 'Qantas', 'GOW': 'Go First', 'ACA': 'Air Canada', 'SWA': 'Southwest',
+      'UAL': 'United Airlines', 'AAL': 'American Airlines', 'DAL': 'Delta Air Lines', 'CCA': 'Air China',
+      'AKJ': 'Akasa Air', 'AXM': 'AirAsia', 'CTV': 'Citilink', 'GIA': 'Garuda Indonesia', 'MSR': 'Egyptair', 
+      'RJA': 'Royal Jordanian', 'MEA': 'Middle East Airlines', 'LLR': 'Alliance Air', 'IAD': 'AirAsia India', 
+      'AIX': 'Air India Express', 'AXB': 'Air India Express', 'UBG': 'US-Bangla Airlines',
+      'SER': 'SereneAir', 'SJL': 'AirSial', 'FJH': 'Fly Jinnah', 'KNE': 'Flynas', 'FAD': 'Flyadeal',
+      'UZB': 'Uzbekistan Airways', 'KZR': 'Air Astana', 'SOM': 'Somon Air', 'TUA': 'Turkmenistan Airlines',
+      'JAI': 'Jet Airways', 'SNG': 'Batik Air', 'LNI': 'Lion Air', 'AWQ': 'Indonesia AirAsia', 'BTK': 'Batik Air',
+      'CSN': 'China Southern', 'CES': 'China Eastern', 'CHH': 'Hainan Airlines', 'CXA': 'XiamenAir',
+      'CAL': 'China Airlines', 'EVA': 'EVA Air', 'JAL': 'Japan Airlines', 'ANA': 'All Nippon Airways',
+      'KAL': 'Korean Air', 'AAR': 'Asiana Airlines', 'HVN': 'Vietnam Airlines', 'VJC': 'VietJet Air',
+      'THA': 'Thai Airways', 'TAX': 'Thai AirAsia X', 'AIQ': 'Thai AirAsia', 'SLM': 'Thai Lion Air',
+      'NJA': 'NetJets', 'BOX': 'AeroLogic', 'GEC': 'Lufthansa Cargo', 'FDX': 'FedEx', 'UPS': 'UPS Airlines',
+      'IRA': 'Iran Air', 'IRM': 'Mahan Air', 'IZG': 'Zagros Airlines', 'SYR': 'Syrian Air', 'IAW': 'Iraqi Airways'
+    };
+
+    const iataToIcao = {
+      'ISB':'OPIS', 'LHE':'OPLA', 'KHI':'OPKC', 'PEW':'OPPS', 'DEL':'VIDP', 'BOM':'VABB',
+      'BLR':'VOBL', 'HYD':'VOHS', 'CCU':'VECC', 'MAA':'VOMM', 'DAC':'VGHS', 'KTM':'VNKT',
+      'CMB':'VCBI', 'DXB':'OMDB', 'AUH':'OMAA', 'SHJ':'OMSJ', 'DOH':'OTHH', 'JED':'OEJN',
+      'RUH':'OERK', 'MCT':'OOMS', 'BAH':'OBBI', 'KWI':'OKBK', 'HKG':'VHHH', 'LHR':'EGLL',
+      'JFK':'KJFK', 'SIN':'WSSS', 'BKK':'VTBS', 'KUL':'WMKK', 'FRA':'EDDF', 'CDG':'LFPG',
+      'MNL':'RPLL', 'AMM':'OJAI', 'CAI':'HECA', 'BEY':'OLBA', 'IKA':'OIIE', 'THR':'OIII'
+    };
+
+    function getIcao(code) {
+      if(!code || code === '----') return '----';
+      return iataToIcao[code.toUpperCase()] || code;
+    }
+
+    const map = L.map('map', { zoomControl: false }).setView([26.0, 52.0], 5);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 3, attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+    const rainLayer = L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/256/{z}/{x}/{y}/2/1_1.png', { maxZoom: 18, opacity: 0.7 });
+    const cloudLayer = L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.5 });
+    const windLayer = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.5 });
+    
+    const lightningIcon = L.divIcon({ className: '', html: '<div class="lightning-pin"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
+    const lightningCoords = [[25.2, 55.3], [25.3, 51.5], [29.3, 47.9], [24.6, 46.7], [21.5, 39.1], [30.0, 31.2], [33.3, 44.4], [26.2, 50.6], [24.8, 67.0], [31.5, 74.3]];
+    let lightningMarkers = L.layerGroup();
+    lightningCoords.forEach(coord => { let marker = L.marker(coord, { icon: lightningIcon }); marker.bindPopup('<b>Lightning Strike</b>'); lightningMarkers.addLayer(marker); });
+
+    function toggleWeatherMenu() { let panel = document.getElementById('weather-panel'); panel.style.display = panel.style.display === 'block' ? 'none' : 'block'; }
+    function toggleWeatherLayer(type) {
+      let checked = document.getElementById('chk-' + type).checked;
+      if (type === 'rain') { checked ? rainLayer.addTo(map) : map.removeLayer(rainLayer); }
+      if (type === 'clouds') { checked ? cloudLayer.addTo(map) : map.removeLayer(cloudLayer); }
+      if (type === 'wind') { checked ? windLayer.addTo(map) : map.removeLayer(windLayer); }
+      if (type === 'lightning') { checked ? lightningMarkers.addTo(map) : map.removeLayer(lightningMarkers); }
+    }
+    
+    function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; filterFlights(); }
+
+    function updateClock() {
+      let tz = document.getElementById('set-timezone').value;
+      let clockFormat = document.getElementById('set-clock').value;
+      let now = new Date();
+      let options = { hour12: (clockFormat === '12'), hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      if (tz === 'utc') { options.timeZone = 'UTC'; }
+      let timeStr = now.toLocaleTimeString([], options);
+      document.getElementById('last-update').innerText = tz === 'utc' ? timeStr + ' UTC' : timeStr;
+    }
+    setInterval(updateClock, 1000);
+
+    let markers = {};
+    let flightDataStore = [];
+    let photoCache = {};
+
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
+    function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
+    function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
+    function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
+
+    function fetchRadarData() {
+      fetch('/json')
+        .then(res => { if (!res.ok) throw new Error('Proxy Offline'); return res.json(); })
+        .then(data => {
+        let count = 0;
+        let activeFlights = new Set();
+        flightDataStore = [];
+
+        for (let key in data) {
+          if (key === 'full_count' || key === 'version' || key === 'stats') continue;
+          let ac = data[key];
+          if (!ac || ac.length < 14) continue;
+          
+          let flight = ac[16] || ac[13] || ac[0] || 'N/A';
+          activeFlights.add(flight);
+          
+          let opCode = flight.length >= 3 ? flight.substring(0, 3).toUpperCase() : 'N/A';
+          let airlineName = airlines[opCode] ? airlines[opCode] : opCode;
+          let airlineDisplay = (airlineName === opCode || opCode === 'N/A') ? opCode : `${airlineName} (${opCode})`;
+          
+          let logoUrl = 'https://flightaware.com/images/airline_logos/90p/' + opCode + '.png';
+          let lat = ac[1];
+          let lng = ac[2];
+          let heading = ac[3] || 0;
+          let altBase = ac[4] || 0;
+          let speedBase = ac[5] || 0;
+          let type = ac[8] || 'Unknown';
+          let reg = ac[9] || '';
+          let depIcao = getIcao(ac[11]);
+          let arrIcao = getIcao(ac[12]);
+          if (altBase < 50) altBase = 'GND';
+
+          flightDataStore.push({ flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, heading, reg, depIcao, arrIcao, type, lat: lat, lng: lng });
+
+          let popupContent = `<b>Flight:</b> ${flight}<br><b>Reg:</b> ${reg}<br><b>Route:</b> ${depIcao} &rarr; ${arrIcao}<br><b>Type:</b> ${type}`;
+          
+          let rotIcon = L.divIcon({ className: '', html: `<div class="plane-icon" style="transform: rotate(${heading - 45}deg);">✈️</div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+          
+          if (markers[flight]) {
+            markers[flight].setLatLng([lat, lng]);
+            markers[flight].setPopupContent(popupContent);
+            markers[flight].setIcon(rotIcon);
+          } else {
+            let marker = L.marker([lat, lng], { icon: rotIcon });
+            if (document.getElementById('set-tooltip').checked) marker.bindTooltip(flight, { direction: 'top', offset: [0, -5] });
+            marker.bindPopup(popupContent);
+            marker.on('click', () => { map.setView([lat, lng], 6); selectFlight(flight); });
+            markers[flight] = marker;
+          }
+          count++;
+        }
+
+        for (let f in markers) {
+          if (!activeFlights.has(f)) { map.removeLayer(markers[f]); delete markers[f]; }
+        }
+
+        document.getElementById('ac-count').innerText = count;
+        let statEl = document.getElementById('status');
+        statEl.innerText = 'Live'; statEl.style.color = '#3fb950';
+        filterFlights();
+      }).catch(err => {
+        let statEl = document.getElementById('status');
+        statEl.innerText = 'Error: ' + err.message; statEl.style.color = '#ff4d4d';
+      });
+    }
+
+    function filterFlights() {
+      let listContainer = document.getElementById('flight-list');
+      let filter = document.getElementById('searchBox').value.toUpperCase();
+      let hidePhoto = document.getElementById('set-hidephoto').checked;
+      let speedUnit = document.getElementById('set-speed').value;
+      let altUnit = document.getElementById('set-alt').value;
+      listContainer.innerHTML = '';
+
+      let filtered = flightDataStore.filter(item => item.flight.toUpperCase().includes(filter) || item.type.toUpperCase().includes(filter) || item.opCode.toUpperCase().includes(filter) || item.reg.toUpperCase().includes(filter) || item.depIcao.toUpperCase().includes(filter) || item.arrIcao.toUpperCase().includes(filter));
+
+      flightDataStore.forEach(item => {
+        if (markers[item.flight]) {
+          let matches = filter === '' || item.flight.toUpperCase().includes(filter) || item.type.toUpperCase().includes(filter) || item.opCode.toUpperCase().includes(filter) || item.reg.toUpperCase().includes(filter) || item.depIcao.toUpperCase().includes(filter) || item.arrIcao.toUpperCase().includes(filter);
+          if (matches) {
+            if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
+            let tooltipOn = document.getElementById('set-tooltip').checked;
+            if (tooltipOn && !markers[item.flight].getTooltip()) markers[item.flight].bindTooltip(item.flight, { direction: 'top', offset: [0, -5] });
+            else if (!tooltipOn && markers[item.flight].getTooltip()) markers[item.flight].unbindTooltip();
+          } else {
+            if (map.hasLayer(markers[item.flight])) map.removeLayer(markers[item.flight]);
+          }
+        }
+      });
+
+      if (filtered.length === 0) { listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>'; return; }
+
+      let displayLimit = filtered.slice(0, 50);
+      displayLimit.forEach(ac => {
+        let displaySpeed = ac.speedBase; let speedLabel = 'kts';
+        if (speedUnit === 'kmh') { displaySpeed = Math.round(ac.speedBase * 1.852); speedLabel = 'km/h'; }
+        else if (speedUnit === 'mph') { displaySpeed = Math.round(ac.speedBase * 1.15078); speedLabel = 'mph'; }
+        
+        let displayAlt = ac.altBase; let altLabel = 'ft';
+        if (ac.altBase !== 'GND' && altUnit === 'm') { displayAlt = Math.round(ac.altBase / 3.28084); altLabel = 'm'; }
+        if (ac.altBase === 'GND') altLabel = '';
+
+        let card = document.createElement('div');
+        card.className = 'flight-card'; card.id = 'card-' + ac.flight;
+        
+        card.innerHTML = `
+          <div class="flight-title">
+            <div style="display:flex; align-items:center;">
+              <img src="${ac.logoUrl}" class="airline-logo" onerror="this.style.display='none'">
+              <div>
+                <span style="line-height:1.2;">${ac.flight}</span>
+                <div style="font-size:11px; color:#8b949e; font-weight:normal; margin-top:2px;">${ac.airlineDisplay}</div>
+              </div>
+            </div>
+            <span style="font-size:11px; background:#21262d; padding:2px 6px; border-radius:4px; color:#00d2ff;">${ac.type}</span>
+          </div>
+          <div class="reg-subtext">REG: ${ac.reg || 'N/A'}</div>
+          ${(!hidePhoto ? `<div class="ac-photo-container" id="photo-box-${ac.flight}"><div class="ac-photo-loading">Loading photo...</div></div>` : '')}
+          <div class="flight-details">
+            <div class="stat-box"><div class="stat-label">Altitude</div><div class="stat-val">${displayAlt} ${altLabel}</div></div>
+            <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-val">${displaySpeed} ${speedLabel}</div></div>
+            <div class="stat-box"><div class="stat-label">Heading</div><div class="stat-val">${ac.heading}&deg;</div></div>
+            <div class="stat-box"><div class="stat-label">Type</div><div class="stat-val" style="color:#e3b341;">${ac.type}</div></div>
+            <div class="stat-box" style="grid-column: span 2;"><div class="stat-label">Route (ICAO)</div><div class="stat-val" style="color:#00d2ff; font-size:11px;">${ac.depIcao} &rarr; ${ac.arrIcao}</div></div>
+          </div>
+        `;
+        
+        card.onclick = () => { map.setView([ac.lat, ac.lng], 6); selectFlight(ac.flight); if(window.innerWidth <= 600) toggleSidebar(); if(markers[ac.flight]) markers[ac.flight].openPopup(); };
+        listContainer.appendChild(card);
+        
+        if (!hidePhoto && ac.reg && ac.reg !== '') {
+          if (photoCache[ac.flight]) { showPhoto(ac.flight, photoCache[ac.flight]); }
+          else { fetchAircraftPhoto(ac.flight, ac.reg); }
+        }
+      });
+    }
+
+    function fetchAircraftPhoto(flight, reg) {
+      let box = document.getElementById('photo-box-' + flight);
+      if (!box) return;
+      fetch('https://api.planespotters.net/pub/photos/reg/' + reg)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.photos && data.photos.length > 0) {
+            let photoUrl = data.photos[0].thumbnail_large ? data.photos[0].thumbnail_large.src : data.photos[0].thumbnail.src;
+            photoCache[flight] = photoUrl; showPhoto(flight, photoUrl);
+          } else { box.style.display = 'none'; }
+        }).catch(() => { box.style.display = 'none'; });
+    }
+
+    function showPhoto(flight, url) {
+      let box = document.getElementById('photo-box-' + flight);
+      if (box) { box.style.display = 'block'; box.innerHTML = `<img src="${url}" class="ac-photo" alt="Aircraft Photo">`; }
+    }
+
+    function selectFlight(flight) {
+      let el = document.getElementById('card-' + flight);
+      if(el) { el.scrollIntoView({ smooth: true, block: 'center' }); el.style.borderColor = '#00d2ff'; setTimeout(() => el.style.borderColor = '#30363d', 2000); }
+    }
+
+    setInterval(fetchRadarData, 10000);
+    fetchRadarData();
+  </script>
+</body>
+</html>
