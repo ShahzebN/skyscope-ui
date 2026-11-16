@@ -242,6 +242,7 @@
     let markers = {};
     let flightDataStore = [];
     let photoCache = {};
+    let selectedFlightId = null;
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
     function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
@@ -285,7 +286,6 @@
           flightDataStore.push({ flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, heading, reg, depIcao, arrIcao, type, lat: lat, lng: lng });
 
           let popupContent = `<b>Flight:</b> ${flight}<br><b>Reg:</b> ${reg}<br><b>Route:</b> ${depIcao} &rarr; ${arrIcao}<br><b>Type:</b> ${type}`;
-          
           let rotIcon = L.divIcon({ className: '', html: `<div class="plane-icon" style="transform: rotate(${heading - 45}deg);">✈️</div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
           
           if (markers[flight]) {
@@ -340,6 +340,17 @@
         }
       });
 
+      if (selectedFlightId) {
+        const idx = filtered.findIndex(ac => ac.flight === selectedFlightId);
+        if (idx > -1) {
+          const [chosen] = filtered.splice(idx, 1);
+          filtered.unshift(chosen);
+        } else {
+          const rawMatch = flightDataStore.find(ac => ac.flight === selectedFlightId);
+          if (rawMatch) filtered.unshift(rawMatch);
+        }
+      }
+
       if (filtered.length === 0) { listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>'; return; }
 
       let displayLimit = filtered.slice(0, 50);
@@ -354,6 +365,10 @@
 
         let card = document.createElement('div');
         card.className = 'flight-card'; card.id = 'card-' + ac.flight;
+        if (ac.flight === selectedFlightId) {
+          card.style.borderColor = '#00d2ff';
+          card.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.35)';
+        }
         
         card.innerHTML = `
           <div class="flight-title">
@@ -406,8 +421,23 @@
     }
 
     function selectFlight(flight) {
-      let el = document.getElementById('card-' + flight);
-      if(el) { el.scrollIntoView({ smooth: true, block: 'center' }); el.style.borderColor = '#00d2ff'; setTimeout(() => el.style.borderColor = '#30363d', 2000); }
+      selectedFlightId = flight;
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.getElementById('toggle-btn');
+      if (sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        toggleBtn.classList.remove('collapsed');
+        setTimeout(() => { map.invalidateSize(); }, 300);
+      }
+
+      filterFlights();
+
+      const el = document.getElementById('card-' + flight);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.style.borderColor = '#00d2ff';
+        el.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.35)';
+      }
     }
 
     setInterval(fetchRadarData, 10000);
