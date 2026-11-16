@@ -101,7 +101,7 @@
         </div>
       </div>
       <div id="flight-list">
-        <p style="color: #7f8c8d; text-align: center; margin-top: 40px;">Scanning Airspace...</p>
+        <p style="color: #7f8c8d; text-align: center; margin-top: 40px;">Connecting to Cloud Relay...</p>
       </div>
     </div>
     <div class="status-bar">
@@ -164,6 +164,8 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    const FIREBASE_ENDPOINT = 'https://skyscope-radar-default-rtdb.asia-southeast1.firebasedatabase.app/radar.json';
+
     const airlines = {
       'CPA': 'Cathay Pacific', 'PAL': 'Philippine Airlines', 'UAE': 'Emirates', 'QTR': 'Qatar Airways', 
       'PIA': 'Pakistan Int. Airlines', 'THY': 'Turkish Airlines', 'AIC': 'Air India', 'IGO': 'IndiGo', 
@@ -247,12 +249,14 @@
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
 
     function fetchRadarData() {
-      fetch('/json')
-        .then(res => { if (!res.ok) throw new Error('Proxy Offline'); return res.json(); })
+      fetch(FIREBASE_ENDPOINT)
+        .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline'); return res.json(); })
         .then(data => {
         let count = 0;
         let activeFlights = new Set();
         flightDataStore = [];
+
+        if (!data) throw new Error('Awaiting ESP32 Uplink');
 
         for (let key in data) {
           if (key === 'full_count' || key === 'version' || key === 'stats') continue;
@@ -304,11 +308,11 @@
 
         document.getElementById('ac-count').innerText = count;
         let statEl = document.getElementById('status');
-        statEl.innerText = 'Live'; statEl.style.color = '#3fb950';
+        statEl.innerText = 'Live (Cloud Relay)'; statEl.style.color = '#3fb950';
         filterFlights();
       }).catch(err => {
         let statEl = document.getElementById('status');
-        statEl.innerText = 'Error: ' + err.message; statEl.style.color = '#ff4d4d';
+        statEl.innerText = err.message; statEl.style.color = '#ff4d4d';
       });
     }
 
