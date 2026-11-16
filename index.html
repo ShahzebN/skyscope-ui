@@ -10,6 +10,28 @@
     #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     .leaflet-layer, .leaflet-control-zoom { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
     
+    /* Custom Dark Map Popup Styling */
+    .leaflet-popup-content-wrapper { background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); color: #e1e1e1; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.85); padding: 0; }
+    .leaflet-popup-content { margin: 12px 14px; min-width: 210px; font-size: 12px; line-height: 1.4; }
+    .leaflet-popup-tip { background: rgba(15, 18, 23, 0.96); border: 1px solid #30363d; }
+    .leaflet-container a.leaflet-popup-close-button { color: #8b949e; top: 8px; right: 8px; font-size: 16px; }
+    .leaflet-container a.leaflet-popup-close-button:hover { color: #00d2ff; }
+    .popup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #21262d; padding-bottom: 8px; margin-bottom: 8px; padding-right: 14px; }
+    .popup-callsign { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 0.4px; }
+    .popup-type { background: #21262d; color: #00d2ff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+    .popup-route-bar { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 6px 8px; text-align: center; font-weight: bold; color: #00d2ff; font-size: 13px; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .popup-cell { background: #161b22; padding: 4px 7px; border-radius: 4px; border: 1px solid #21262d; }
+    .popup-lbl { font-size: 9px; color: #7f8c8d; text-transform: uppercase; }
+    .popup-val { font-size: 11px; font-weight: bold; color: #fff; }
+
+    /* Airport Endpoint Pins for Route Line */
+    .airport-pin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.9); }
+    .airport-pin.origin { background: #00d2ff; }
+    .airport-pin.dest { background: #3fb950; box-shadow: 0 0 8px rgba(63, 185, 80, 0.9); }
+    .airport-tooltip { background: #0d1117 !important; color: #00d2ff !important; border: 1px solid #30363d !important; font-weight: bold !important; font-size: 10px !important; padding: 2px 6px !important; border-radius: 4px !important; box-shadow: 0 2px 6px rgba(0,0,0,0.8) !important; }
+    .airport-tooltip::before { display: none !important; }
+
     #sidebar { position: absolute; top: 15px; left: 15px; width: 340px; height: calc(100vh - 90px); background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); z-index: 1000; border-radius: 12px; border: 1px solid #2a323d; box-shadow: 0 12px 35px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease-in-out; }
     #sidebar.collapsed { transform: translateX(-370px); }
     
@@ -92,7 +114,7 @@
     <div class="sidebar-content">
       <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, route, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
+        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, route, squawk..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
         <div id="search-shortcuts">
           <div class="shortcut-category">Quick Filters</div>
           <div class="shortcut-item" onmousedown="setSearchQuery('OPIS')"><span>📍 Origin/Dest (e.g. OPIS)</span><span style="color:#7f8c8d;">Route</span></div>
@@ -186,21 +208,83 @@
       'KAL': 'Korean Air', 'AAR': 'Asiana Airlines', 'HVN': 'Vietnam Airlines', 'VJC': 'VietJet Air',
       'THA': 'Thai Airways', 'TAX': 'Thai AirAsia X', 'AIQ': 'Thai AirAsia', 'SLM': 'Thai Lion Air',
       'NJA': 'NetJets', 'BOX': 'AeroLogic', 'GEC': 'Lufthansa Cargo', 'FDX': 'FedEx', 'UPS': 'UPS Airlines',
-      'IRA': 'Iran Air', 'IRM': 'Mahan Air', 'IZG': 'Zagros Airlines', 'SYR': 'Syrian Air', 'IAW': 'Iraqi Airways'
+      'IRA': 'Iran Air', 'IRM': 'Mahan Air', 'IZG': 'Zagros Airlines', 'SYR': 'Syrian Air', 'IAW': 'Iraqi Airways',
+      'BCS': 'European Air Transport Leipzig', 'CLX': 'Cargolux', 'GTI': 'Atlas Air', 'ABW': 'AirBridgeCargo'
     };
 
-    const iataToIcao = {
-      'ISB':'OPIS', 'LHE':'OPLA', 'KHI':'OPKC', 'PEW':'OPPS', 'DEL':'VIDP', 'BOM':'VABB',
-      'BLR':'VOBL', 'HYD':'VOHS', 'CCU':'VECC', 'MAA':'VOMM', 'DAC':'VGHS', 'KTM':'VNKT',
-      'CMB':'VCBI', 'DXB':'OMDB', 'AUH':'OMAA', 'SHJ':'OMSJ', 'DOH':'OTHH', 'JED':'OEJN',
-      'RUH':'OERK', 'MCT':'OOMS', 'BAH':'OBBI', 'KWI':'OKBK', 'HKG':'VHHH', 'LHR':'EGLL',
-      'JFK':'KJFK', 'SIN':'WSSS', 'BKK':'VTBS', 'KUL':'WMKK', 'FRA':'EDDF', 'CDG':'LFPG',
-      'MNL':'RPLL', 'AMM':'OJAI', 'CAI':'HECA', 'BEY':'OLBA', 'IKA':'OIIE', 'THR':'OIII'
+    // Core fallback airports (ICAO + Lat/Lon) + Global IATA->ICAO & Coordinate lookup
+    const airportDb = {
+      'ISB': { icao: 'OPIS', lat: 33.549, lon: 72.825 }, 'LHE': { icao: 'OPLA', lat: 31.521, lon: 74.403 },
+      'KHI': { icao: 'OPKC', lat: 24.906, lon: 67.160 }, 'PEW': { icao: 'OPPS', lat: 33.993, lon: 71.514 },
+      'MUX': { icao: 'OPMT', lat: 30.203, lon: 71.419 }, 'SKT': { icao: 'OPST', lat: 32.535, lon: 74.363 },
+      'LYP': { icao: 'OPFA', lat: 31.365, lon: 72.994 }, 'UET': { icao: 'OPQT', lat: 30.251, lon: 66.937 },
+      'DEL': { icao: 'VIDP', lat: 28.566, lon: 77.103 }, 'BOM': { icao: 'VABB', lat: 19.088, lon: 72.867 },
+      'BLR': { icao: 'VOBL', lat: 13.198, lon: 77.706 }, 'HYD': { icao: 'VOHS', lat: 17.240, lon: 78.429 },
+      'CCU': { icao: 'VECC', lat: 22.654, lon: 88.446 }, 'MAA': { icao: 'VOMM', lat: 12.990, lon: 80.169 },
+      'COK': { icao: 'VOCI', lat: 10.152, lon: 76.401 }, 'AMD': { icao: 'VAAH', lat: 23.077, lon: 72.634 },
+      'DAC': { icao: 'VGHS', lat: 23.843, lon: 90.397 }, 'CGP': { icao: 'VGEG', lat: 22.249, lon: 91.813 },
+      'KTM': { icao: 'VNKT', lat: 27.696, lon: 85.359 }, 'CMB': { icao: 'VCBI', lat: 7.180, lon: 79.884 },
+      'MLE': { icao: 'VRMM', lat: 4.191, lon: 73.529 }, 'KBL': { icao: 'OAKB', lat: 34.565, lon: 69.212 },
+      'DXB': { icao: 'OMDB', lat: 25.252, lon: 55.364 }, 'DWC': { icao: 'OMDW', lat: 24.896, lon: 55.161 },
+      'AUH': { icao: 'OMAA', lat: 24.433, lon: 54.651 }, 'SHJ': { icao: 'OMSJ', lat: 25.328, lon: 55.517 },
+      'DOH': { icao: 'OTHH', lat: 25.273, lon: 51.608 }, 'JED': { icao: 'OEJN', lat: 21.679, lon: 39.156 },
+      'RUH': { icao: 'OERK', lat: 24.957, lon: 46.698 }, 'DMM': { icao: 'OEDF', lat: 26.471, lon: 49.797 },
+      'MED': { icao: 'OEMA', lat: 24.553, lon: 39.705 }, 'MCT': { icao: 'OOMS', lat: 23.593, lon: 58.284 },
+      'SLL': { icao: 'OOSA', lat: 17.038, lon: 54.091 }, 'BAH': { icao: 'OBBI', lat: 26.270, lon: 50.633 },
+      'KWI': { icao: 'OKBK', lat: 29.226, lon: 47.968 }, 'AMM': { icao: 'OJAI', lat: 31.722, lon: 35.993 },
+      'CAI': { icao: 'HECA', lat: 30.121, lon: 31.405 }, 'BEY': { icao: 'OLBA', lat: 33.820, lon: 35.488 },
+      'BGW': { icao: 'ORBI', lat: 33.262, lon: 44.234 }, 'EBL': { icao: 'ORER', lat: 36.237, lon: 43.963 },
+      'IKA': { icao: 'OIIE', lat: 35.416, lon: 51.152 }, 'THR': { icao: 'OIII', lat: 35.689, lon: 51.313 },
+      'MHD': { icao: 'OIMM', lat: 36.235, lon: 59.641 }, 'SYZ': { icao: 'OISS', lat: 29.539, lon: 52.589 },
+      'IST': { icao: 'LTFM', lat: 41.275, lon: 28.751 }, 'SAW': { icao: 'LTFJ', lat: 40.898, lon: 29.309 },
+      'ESB': { icao: 'LTAC', lat: 40.128, lon: 32.995 }, 'AYT': { icao: 'LTAI', lat: 36.898, lon: 30.800 },
+      'GYD': { icao: 'UBBB', lat: 40.467, lon: 50.046 }, 'TAS': { icao: 'UTTT', lat: 41.257, lon: 69.281 },
+      'ALA': { icao: 'UAAA', lat: 43.352, lon: 77.040 }, 'NQZ': { icao: 'UACC', lat: 51.022, lon: 71.466 },
+      'HKG': { icao: 'VHHH', lat: 22.308, lon: 113.918 }, 'PVG': { icao: 'ZSPD', lat: 31.143, lon: 121.805 },
+      'PEK': { icao: 'ZBAA', lat: 40.080, lon: 116.584 }, 'CAN': { icao: 'ZGGG', lat: 23.392, lon: 113.298 },
+      'ICN': { icao: 'RKSI', lat: 37.469, lon: 126.450 }, 'NRT': { icao: 'RJAA', lat: 35.764, lon: 140.386 },
+      'HND': { icao: 'RJTT', lat: 35.552, lon: 139.779 }, 'SIN': { icao: 'WSSS', lat: 1.350, lon: 103.994 },
+      'BKK': { icao: 'VTBS', lat: 13.681, lon: 100.747 }, 'KUL': { icao: 'WMKK', lat: 2.745, lon: 101.709 },
+      'CGK': { icao: 'WIII', lat: -6.125, lon: 106.655 }, 'MNL': { icao: 'RPLL', lat: 14.508, lon: 121.019 },
+      'LHR': { icao: 'EGLL', lat: 51.470, lon: -0.454 }, 'LGW': { icao: 'EGKK', lat: 51.148, lon: -0.190 },
+      'MAN': { icao: 'EGCC', lat: 53.353, lon: -2.274 }, 'CDG': { icao: 'LFPG', lat: 49.009, lon: 2.547 },
+      'FRA': { icao: 'EDDF', lat: 50.033, lon: 8.570 }, 'MUC': { icao: 'EDDM', lat: 48.353, lon: 11.786 },
+      'LEJ': { icao: 'EDDP', lat: 51.423, lon: 12.236 }, 'AMS': { icao: 'EHAM', lat: 52.308, lon: 4.763 },
+      'ZRH': { icao: 'LSZH', lat: 47.464, lon: 8.549 }, 'VIE': { icao: 'LOWW', lat: 48.110, lon: 16.569 },
+      'MXP': { icao: 'LIMC', lat: 45.630, lon: 8.728 }, 'FCO': { icao: 'LIRF', lat: 41.800, lon: 12.238 },
+      'MAD': { icao: 'LEMD', lat: 40.471, lon: -3.562 }, 'BCN': { icao: 'LEBL', lat: 41.297, lon: 2.078 },
+      'JFK': { icao: 'KJFK', lat: 40.639, lon: -73.778 }, 'IAD': { icao: 'KIAD', lat: 38.944, lon: -77.455 },
+      'ORD': { icao: 'KORD', lat: 41.978, lon: -87.904 }, 'LAX': { icao: 'KLAX', lat: 33.942, lon: -118.408 },
+      'YYZ': { icao: 'CYYZ', lat: 43.677, lon: -79.630 }, 'SYD': { icao: 'YSSY', lat: -33.946, lon: 151.177 },
+      'MEL': { icao: 'YMML', lat: -37.673, lon: 144.843 }, 'JNB': { icao: 'FAOR', lat: -26.139, lon: 28.246 }
     };
+    const icaoCoords = {};
+    for (const k in airportDb) { icaoCoords[airportDb[k].icao] = [airportDb[k].lat, airportDb[k].lon]; }
 
-    function getIcao(code) {
-      if(!code || code === '----') return '----';
-      return iataToIcao[code.toUpperCase()] || code;
+    // Asynchronously load full worldwide 29,000+ airport database for complete IATA->ICAO & route lines
+    fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json')
+      .then(r => r.json())
+      .then(allAirports => {
+        for (const icao in allAirports) {
+          const ap = allAirports[icao];
+          icaoCoords[icao] = [ap.lat, ap.lon];
+          if (ap.iata && ap.iata.length === 3) {
+            airportDb[ap.iata.toUpperCase()] = { icao: icao, lat: ap.lat, lon: ap.lon };
+          }
+        }
+        if (flightDataStore.length > 0) fetchRadarData();
+      }).catch(() => {});
+
+    function resolveIcao(code) {
+      if (!code || code === '----') return '----';
+      const up = code.trim().toUpperCase();
+      if (airportDb[up]) return airportDb[up].icao;
+      return up;
+    }
+
+    function getAirportCoords(icao) {
+      if (!icao || icao === '----') return null;
+      return icaoCoords[icao.toUpperCase()] || null;
     }
 
     const map = L.map('map', { zoomControl: false }).setView([26.0, 52.0], 5);
@@ -243,11 +327,76 @@
     let flightDataStore = [];
     let photoCache = {};
     let selectedFlightId = null;
+    let routeLayerGroup = L.layerGroup().addTo(map);
+
+    function drawFlightRoute(ac) {
+      routeLayerGroup.clearLayers();
+      if (!ac) return;
+
+      const origCoords = getAirportCoords(ac.depIcao);
+      const destCoords = getAirportCoords(ac.arrIcao);
+      const planeCoords = [ac.lat, ac.lng];
+
+      if (origCoords) {
+        // Solid cyan line from Origin Airport to Aircraft (flown path)
+        L.polyline([origCoords, planeCoords], {
+          color: '#00d2ff',
+          weight: 2.5,
+          opacity: 0.9
+        }).addTo(routeLayerGroup);
+
+        const origIcon = L.divIcon({ className: '', html: '<div class="airport-pin origin"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+        L.marker(origCoords, { icon: origIcon })
+          .bindTooltip(`DEP: ${ac.depIcao}`, { permanent: true, direction: 'top', offset: [0, -6], className: 'airport-tooltip' })
+          .addTo(routeLayerGroup);
+      }
+
+      if (destCoords) {
+        // Dashed green/cyan line from Aircraft to Destination Airport (remaining path)
+        L.polyline([planeCoords, destCoords], {
+          color: '#3fb950',
+          weight: 2,
+          opacity: 0.85,
+          dashArray: '6, 8'
+        }).addTo(routeLayerGroup);
+
+        const destIcon = L.divIcon({ className: '', html: '<div class="airport-pin dest"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+        L.marker(destCoords, { icon: destIcon })
+          .bindTooltip(`ARR: ${ac.arrIcao}`, { permanent: true, direction: 'top', offset: [0, -6], className: 'airport-tooltip' })
+          .addTo(routeLayerGroup);
+      }
+    }
+
+    map.on('click', () => {
+      selectedFlightId = null;
+      routeLayerGroup.clearLayers();
+      filterFlights();
+    });
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
     function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
+
+    function buildPopupHtml(ac) {
+      const sqColor = (ac.squawk === '7700' || ac.squawk === '7600' || ac.squawk === '7500') ? '#ff4d4d' : '#e3b341';
+      return `
+        <div class="popup-header">
+          <div>
+            <div class="popup-callsign">${ac.flight}</div>
+            <div style="font-size:10px; color:#8b949e;">${ac.airlineDisplay}</div>
+          </div>
+          <span class="popup-type">${ac.type}</span>
+        </div>
+        <div class="popup-route-bar">${ac.depIcao} &rarr; ${ac.arrIcao}</div>
+        <div class="popup-grid">
+          <div class="popup-cell"><div class="popup-lbl">Altitude</div><div class="popup-val">${ac.altBase === 'GND' ? 'GND' : ac.altBase + ' ft'}</div></div>
+          <div class="popup-cell"><div class="popup-lbl">Speed</div><div class="popup-val">${ac.speedBase} kts</div></div>
+          <div class="popup-cell"><div class="popup-lbl">Reg</div><div class="popup-val">${ac.reg || 'N/A'}</div></div>
+          <div class="popup-cell"><div class="popup-lbl">Squawk</div><div class="popup-val" style="color:${sqColor};">${ac.squawk}</div></div>
+        </div>
+      `;
+    }
 
     function fetchRadarData() {
       fetch(FIREBASE_ENDPOINT)
@@ -277,15 +426,17 @@
           let heading = ac[3] || 0;
           let altBase = ac[4] || 0;
           let speedBase = ac[5] || 0;
+          let squawk = (ac[6] && ac[6] !== '') ? String(ac[6]).padStart(4, '0') : '----';
           let type = ac[8] || 'Unknown';
           let reg = ac[9] || '';
-          let depIcao = getIcao(ac[11]);
-          let arrIcao = getIcao(ac[12]);
+          let depIcao = resolveIcao(ac[11]);
+          let arrIcao = resolveIcao(ac[12]);
           if (altBase < 50) altBase = 'GND';
 
-          flightDataStore.push({ flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, heading, reg, depIcao, arrIcao, type, lat: lat, lng: lng });
+          const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, heading, squawk, reg, depIcao, arrIcao, type, lat, lng };
+          flightDataStore.push(acObj);
 
-          let popupContent = `<b>Flight:</b> ${flight}<br><b>Reg:</b> ${reg}<br><b>Route:</b> ${depIcao} &rarr; ${arrIcao}<br><b>Type:</b> ${type}`;
+          let popupContent = buildPopupHtml(acObj);
           let rotIcon = L.divIcon({ className: '', html: `<div class="plane-icon" style="transform: rotate(${heading - 45}deg);">✈️</div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
           
           if (markers[flight]) {
@@ -296,7 +447,10 @@
             let marker = L.marker([lat, lng], { icon: rotIcon });
             if (document.getElementById('set-tooltip').checked) marker.bindTooltip(flight, { direction: 'top', offset: [0, -5] });
             marker.bindPopup(popupContent);
-            marker.on('click', () => { map.setView([lat, lng], 6); selectFlight(flight); });
+            marker.on('click', (e) => {
+              L.DomEvent.stopPropagation(e);
+              selectFlight(flight);
+            });
             markers[flight] = marker;
           }
           count++;
@@ -304,6 +458,12 @@
 
         for (let f in markers) {
           if (!activeFlights.has(f)) { map.removeLayer(markers[f]); delete markers[f]; }
+        }
+
+        if (selectedFlightId) {
+          const updatedSelected = flightDataStore.find(a => a.flight === selectedFlightId);
+          if (updatedSelected) drawFlightRoute(updatedSelected);
+          else routeLayerGroup.clearLayers();
         }
 
         document.getElementById('ac-count').innerText = count;
@@ -324,11 +484,26 @@
       let altUnit = document.getElementById('set-alt').value;
       listContainer.innerHTML = '';
 
-      let filtered = flightDataStore.filter(item => item.flight.toUpperCase().includes(filter) || item.type.toUpperCase().includes(filter) || item.opCode.toUpperCase().includes(filter) || item.reg.toUpperCase().includes(filter) || item.depIcao.toUpperCase().includes(filter) || item.arrIcao.toUpperCase().includes(filter));
+      let filtered = flightDataStore.filter(item =>
+        item.flight.toUpperCase().includes(filter) ||
+        item.type.toUpperCase().includes(filter) ||
+        item.opCode.toUpperCase().includes(filter) ||
+        item.reg.toUpperCase().includes(filter) ||
+        item.depIcao.toUpperCase().includes(filter) ||
+        item.arrIcao.toUpperCase().includes(filter) ||
+        item.squawk.includes(filter)
+      );
 
       flightDataStore.forEach(item => {
         if (markers[item.flight]) {
-          let matches = filter === '' || item.flight.toUpperCase().includes(filter) || item.type.toUpperCase().includes(filter) || item.opCode.toUpperCase().includes(filter) || item.reg.toUpperCase().includes(filter) || item.depIcao.toUpperCase().includes(filter) || item.arrIcao.toUpperCase().includes(filter);
+          let matches = filter === '' ||
+            item.flight.toUpperCase().includes(filter) ||
+            item.type.toUpperCase().includes(filter) ||
+            item.opCode.toUpperCase().includes(filter) ||
+            item.reg.toUpperCase().includes(filter) ||
+            item.depIcao.toUpperCase().includes(filter) ||
+            item.arrIcao.toUpperCase().includes(filter) ||
+            item.squawk.includes(filter);
           if (matches) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
@@ -363,6 +538,8 @@
         if (ac.altBase !== 'GND' && altUnit === 'm') { displayAlt = Math.round(ac.altBase / 3.28084); altLabel = 'm'; }
         if (ac.altBase === 'GND') altLabel = '';
 
+        const sqColor = (ac.squawk === '7700' || ac.squawk === '7600' || ac.squawk === '7500') ? '#ff4d4d' : '#e3b341';
+
         let card = document.createElement('div');
         card.className = 'flight-card'; card.id = 'card-' + ac.flight;
         if (ac.flight === selectedFlightId) {
@@ -387,12 +564,17 @@
             <div class="stat-box"><div class="stat-label">Altitude</div><div class="stat-val">${displayAlt} ${altLabel}</div></div>
             <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-val">${displaySpeed} ${speedLabel}</div></div>
             <div class="stat-box"><div class="stat-label">Heading</div><div class="stat-val">${ac.heading}&deg;</div></div>
-            <div class="stat-box"><div class="stat-label">Type</div><div class="stat-val" style="color:#e3b341;">${ac.type}</div></div>
+            <div class="stat-box"><div class="stat-label">Squawk</div><div class="stat-val" style="color:${sqColor};">${ac.squawk}</div></div>
             <div class="stat-box" style="grid-column: span 2;"><div class="stat-label">Route (ICAO)</div><div class="stat-val" style="color:#00d2ff; font-size:11px;">${ac.depIcao} &rarr; ${ac.arrIcao}</div></div>
           </div>
         `;
         
-        card.onclick = () => { map.setView([ac.lat, ac.lng], 6); selectFlight(ac.flight); if(window.innerWidth <= 600) toggleSidebar(); if(markers[ac.flight]) markers[ac.flight].openPopup(); };
+        card.onclick = () => {
+          map.setView([ac.lat, ac.lng], 6);
+          selectFlight(ac.flight);
+          if (window.innerWidth <= 600) toggleSidebar();
+          if (markers[ac.flight]) markers[ac.flight].openPopup();
+        };
         listContainer.appendChild(card);
         
         if (!hidePhoto && ac.reg && ac.reg !== '') {
@@ -422,6 +604,9 @@
 
     function selectFlight(flight) {
       selectedFlightId = flight;
+      const acObj = flightDataStore.find(a => a.flight === flight);
+      if (acObj) drawFlightRoute(acObj);
+
       const sidebar = document.getElementById('sidebar');
       const toggleBtn = document.getElementById('toggle-btn');
       if (sidebar.classList.contains('collapsed')) {
