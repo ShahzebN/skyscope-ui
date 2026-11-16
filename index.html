@@ -38,6 +38,15 @@
     .airport-tooltip.dest-lbl { color: #ffd700 !important; }
     .airport-tooltip::before { display: none !important; }
 
+    /* Flightradar24-Style Progress Bar Widget in Sidebar Card */
+    .route-progress-container { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 8px 10px; margin-top: 8px; }
+    .route-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .route-icao-text { font-size: 13px; font-weight: 800; color: #00d2ff; letter-spacing: 0.5px; }
+    .progress-bar-track { position: relative; width: 100%; height: 5px; background: #30363d; border-radius: 3px; margin: 8px 0 6px 0; }
+    .progress-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: #e3b341; border-radius: 3px; }
+    .progress-plane-icon { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
+    .progress-stats-row { display: flex; justify-content: space-between; font-size: 10px; color: #8b949e; font-weight: 600; }
+
     /* Live Lightning Strike Marker Pin */
     .lightning-pin { width: 12px; height: 12px; background: #ff3300; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 10px #ff3300, 0 0 20px #ff3300; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.8; } }
@@ -359,6 +368,23 @@
       return icaoCoords[icao.toUpperCase()] || null;
     }
 
+    // Haversine formula to compute great-circle distance in kilometers
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Radius of the earth in km
+      const dLat = deg2rad(lat2 - lat1);
+      const dLon = deg2rad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function deg2rad(deg) {
+      return deg * (Math.PI / 180);
+    }
+
     function computeGreatCircle(start, end, segments = 40) {
       const toRad = d => d * Math.PI / 180;
       const toDeg = r => r * 180 / Math.PI;
@@ -392,7 +418,7 @@
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 2, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-    // Weather layers utilizing free public tile endpoints (RainViewer & OpenWeatherMap public tile proxy)
+    // Weather layers utilizing free public tile endpoints
     const rainLayer = L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/256/{z}/{x}/{y}/2/1_1.png', { maxZoom: 18, opacity: 0.75, className: 'weather-rain-layer' });
     const cloudLayer = L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.55, className: 'weather-cloud-layer' });
     const windLayer = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.45, className: 'weather-wind-layer' });
@@ -400,7 +426,6 @@
     const lightningIcon = L.divIcon({ className: '', html: '<div class="lightning-pin"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
     let lightningMarkers = L.layerGroup();
 
-    // Fetch live real-time lightning strikes
     function fetchLiveLightning() {
       fetch('https://www.blitzortung.org/en/live_gmaps_data.php?geojson=1')
         .then(res => res.json())
@@ -766,6 +791,31 @@
         let vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
         let vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
 
+        // Compute Flightradar24-style progress metrics
+        const origCoords = getAirportCoords(ac.depIcao);
+        const destCoords = getAirportCoords(ac.arrIcao);
+        let progressPercent = 50;
+        let distFlownStr = '---';
+        let distRemStr = '---';
+
+        if (origCoords && destCoords) {
+          const totalDist = getDistanceFromLatLonInKm(origCoords[0], origCoords[1], destCoords[0], destCoords[1]);
+          const flownDist = getDistanceFromLatLonInKm(origCoords[0], origCoords[1], ac.lat, ac.lng);
+          const remDist = Math.max(0, totalDist - flownDist);
+          
+          if (totalDist > 0) {
+            progressPercent = Math.min(100, Math.max(0, (flownDist / totalDist) * 100));
+          }
+          const distUnit = document.getElementById('set-dist') ? document.getElementById('set-dist').value : 'Km';
+          let multiplier = 1;
+          let unitLabel = 'km';
+          if (distUnit === 'Nm') { multiplier = 0.539957; unitLabel = 'nm'; }
+          else if (distUnit === 'Miles') { multiplier = 0.621371; unitLabel = 'mi'; }
+
+          distFlownStr = `${Math.round(flownDist * multiplier)} ${unitLabel}`;
+          distRemStr = `${Math.round(remDist * multiplier)} ${unitLabel}`;
+        }
+
         let card = document.createElement('div');
         card.className = 'flight-card'; card.id = 'card-' + ac.flight;
         if (ac.flight === selectedFlightId) {
@@ -785,13 +835,28 @@
             <span style="font-size:11px; background:#21262d; padding:2px 6px; border-radius:4px; color:#00d2ff;">${ac.type}</span>
           </div>
           <div class="reg-subtext">REG: ${ac.reg || 'N/A'}</div>
+          
+          <!-- Flightradar24-Style Progress Bar Widget -->
+          <div class="route-progress-container">
+            <div class="route-header-row">
+              <span class="route-icao-text">${ac.depIcao} &rarr; ${ac.arrIcao}</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+              <div class="progress-plane-icon" style="left: ${progressPercent}%;">✈</div>
+            </div>
+            <div class="progress-stats-row">
+              <span>${distFlownStr} flown</span>
+              <span>${distRemStr} to go</span>
+            </div>
+          </div>
+
           ${(!hidePhoto ? `<div class="ac-photo-container" id="photo-box-${ac.flight}"><div class="ac-photo-loading">Loading photo...</div></div>` : '')}
           <div class="flight-details">
             <div class="stat-box"><div class="stat-label">Altitude</div><div class="stat-val">${displayAlt} ${altLabel}</div></div>
             <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-val">${displaySpeed} ${speedLabel}</div></div>
             <div class="stat-box"><div class="stat-label">Heading</div><div class="stat-val">${ac.heading}&deg;</div></div>
             <div class="stat-box"><div class="stat-label">Vert Speed</div><div class="stat-val" style="color:${vsColor};">${vsPrefix}${vsVal} ${vsLabel}</div></div>
-            <div class="stat-box" style="grid-column: span 2;"><div class="stat-label">Route (ICAO)</div><div class="stat-val" style="color:#00d2ff; font-size:11px;">${ac.depIcao} &rarr; ${ac.arrIcao}</div></div>
           </div>
         `;
         
