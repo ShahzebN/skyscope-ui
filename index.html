@@ -10,6 +10,11 @@
     #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     .leaflet-layer, .leaflet-control-zoom { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
     
+    /* Weather Layer Styling adjustments for dark theme map */
+    .weather-cloud-layer { filter: brightness(1.2) contrast(1.1) opacity(0.55); mix-blend-mode: screen; }
+    .weather-rain-layer { filter: hue-rotate(10deg) saturate(1.4) opacity(0.75); }
+    .weather-wind-layer { filter: invert(0.8) hue-rotate(180deg) opacity(0.45); mix-blend-mode: lighten; }
+
     /* Custom Dark Map Popup Styling */
     .leaflet-popup-content-wrapper { background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); color: #e1e1e1; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.85); padding: 0; }
     .leaflet-popup-content { margin: 12px 14px; min-width: 215px; font-size: 12px; line-height: 1.4; }
@@ -386,15 +391,14 @@
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 3, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-    // Dynamic Live Weather Tile Layers (OpenWeatherMap & RainViewer)
-    const rainLayer = L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/256/{z}/{x}/{y}/2/1_1.png', { maxZoom: 18, opacity: 0.7 });
-    const cloudLayer = L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.5 });
-    const windLayer = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.5 });
+    // Weather layers with custom dark-mode styling class names
+    const rainLayer = L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/256/{z}/{x}/{y}/2/1_1.png', { maxZoom: 18, opacity: 0.75, className: 'weather-rain-layer' });
+    const cloudLayer = L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.55, className: 'weather-cloud-layer' });
+    const windLayer = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.45, className: 'weather-wind-layer' });
     
     const lightningIcon = L.divIcon({ className: '', html: '<div class="lightning-pin"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
     let lightningMarkers = L.layerGroup();
 
-    // Fetch real-time lightning strikes
     function fetchLiveLightning() {
       fetch('https://www.blitzortung.org/en/live_gmaps_data.php?geojson=1')
         .then(res => res.json())
