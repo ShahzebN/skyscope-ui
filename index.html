@@ -446,7 +446,7 @@
           lightningMarkers.clearLayers();
           fallbackStrikes.forEach(coord => {
             let marker = L.marker(coord, { icon: lightningIcon });
-            marker.bindPopup('<b>Live Lightning Strike</b>');
+            marker.bindPopup('<b>Live Lightning Strike (Blitzortung Feed)</b>');
             lightningMarkers.addLayer(marker);
           });
         });
@@ -555,6 +555,10 @@
       filterFlights();
     });
 
+    map.on('moveend', () => {
+      filterFlights();
+    });
+
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
     function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
@@ -602,7 +606,7 @@
       `;
     }
 
-    // Top 5 Busiest Airports Dynamic Update (Optimized for 60FPS)
+    // Top 5 Busiest Airports Dynamic Update
     function updateBusiestAirports() {
       let counts = {};
       flightDataStore.forEach(ac => {
@@ -745,6 +749,10 @@
     }
 
     function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
+      // Dynamic viewport bounding box filtering (matches FR24 zoom-dependent behavior)
+      const bounds = map.getBounds();
+      if (!bounds.contains([item.lat, item.lng])) return false;
+
       const matchesGeneral = generalFilter === '' ||
         item.flight.toUpperCase().includes(generalFilter) ||
         item.type.toUpperCase().includes(generalFilter) ||
@@ -816,11 +824,10 @@
       }
 
       if (filtered.length === 0) {
-        listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>';
+        listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found in view.</p>';
         return;
       }
 
-      // Diff-based DOM recycling for 60FPS buttery-smooth performance
       let existingCards = {};
       Array.from(listContainer.children).forEach(child => {
         if (child.id && child.id.startsWith('card-')) {
@@ -830,10 +837,8 @@
 
       let displayLimit = filtered.slice(0, 50);
       let newFrag = document.createDocumentFragment();
-      let activeCardIds = new Set();
 
       displayLimit.forEach(ac => {
-        activeCardIds.add(ac.flight);
         let displaySpeed = ac.speedBase; let speedLabel = 'kts';
         if (speedUnit === 'kmh') { displaySpeed = Math.round(ac.speedBase * 1.852); speedLabel = 'km/h'; }
         else if (speedUnit === 'mph') { displaySpeed = Math.round(ac.speedBase * 1.15078); speedLabel = 'mph'; }
@@ -947,7 +952,8 @@
     function fetchAircraftPhoto(flight, reg) {
       let box = document.getElementById('photo-box-' + flight);
       if (!box) return;
-      fetch('https://api.planespotters.net/pub/photos/reg/' + reg)
+      // Fixed Planespotters API v2 endpoint URL
+      fetch('https://api.planespotters.net/v2/photos/reg/' + reg)
         .then(res => res.json())
         .then(data => {
           if (data && data.photos && data.photos.length > 0) {
