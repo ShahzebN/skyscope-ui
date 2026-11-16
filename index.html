@@ -97,9 +97,9 @@
     .route-input:focus { outline: none; border-color: #f5b400; box-shadow: 0 0 0 2px rgba(245, 180, 0, 0.18); }
     .route-input-wrap:focus-within .route-plane-svg { stroke: #f5b400; }
     
-    #search-shortcuts { position: absolute; top: 46px; left: 0; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 2000; display: none; max-height: 250px; overflow-y: auto; }
+    #search-shortcuts { position: absolute; top: 46px; left: 0; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 2000; display: none; max-height: 280px; overflow-y: auto; }
     .shortcut-category { padding: 8px 12px; font-size: 10px; color: #00d2ff; background: #21262d; text-transform: uppercase; font-weight: bold; border-bottom: 1px solid #30363d; }
-    .shortcut-item { padding: 9px 14px; font-size: 13px; color: #c9d1d9; cursor: pointer; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; }
+    .shortcut-item { padding: 9px 14px; font-size: 13px; color: #c9d1d9; cursor: pointer; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; align-items: center; }
     .shortcut-item:hover { background: #30363d; color: #fff; }
 
     .sidebar-content { padding: 16px 18px; overflow-y: auto; flex-grow: 1; }
@@ -144,13 +144,31 @@
         <span class="search-icon">🔍</span>
         <input type="text" id="searchBox" class="search-input" placeholder="Search flight, airline, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
         <div id="search-shortcuts">
-          <div class="shortcut-category">Quick Filters</div>
-          <div class="shortcut-item" onmousedown="toggleRouteFilterBox()"><span>📍 Flight by route (FROM / TO)</span><span style="color:#7f8c8d;">Route</span></div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('UAE')"><span>🛫 Emirates (UAE)</span><span style="color:#7f8c8d;">Airline</span></div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('PIA')"><span>🛫 Pakistan International (PIA)</span><span style="color:#7f8c8d;">Airline</span></div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('THY')"><span>🛫 Turkish Airlines (THY)</span><span style="color:#7f8c8d;">Airline</span></div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('A388')"><span>🛩️ Airbus A380 (A388)</span><span style="color:#7f8c8d;">Type</span></div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('B77W')"><span>🛩️ Boeing 777-300ER (B77W)</span><span style="color:#7f8c8d;">Type</span></div>
+          <div class="shortcut-category">Shortcuts to find</div>
+          <div class="shortcut-item" onmousedown="toggleRouteFilterBox()">
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" stroke-width="2" style="vertical-align:middle; margin-right:6px;"><circle cx="5" cy="6" r="3"/><circle cx="19" cy="18" r="3"/><path d="M5 9a9 9 0 0 1 9 9"/></svg> Flight by route</span>
+            <span style="color:#7f8c8d; font-size:11px;">Route</span>
+          </div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('UAE')">
+            <span>✈️ LIVE flight by airline (Emirates)</span>
+            <span style="color:#7f8c8d; font-size:11px;">Airline</span>
+          </div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('PIA')">
+            <span>✈️ LIVE flight by airline (PIA)</span>
+            <span style="color:#7f8c8d; font-size:11px;">Airline</span>
+          </div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('THY')">
+            <span>✈️ LIVE flight by airline (Turkish)</span>
+            <span style="color:#7f8c8d; font-size:11px;">Airline</span>
+          </div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('A388')">
+            <span>🛩️ Flight by aircraft (A380)</span>
+            <span style="color:#7f8c8d; font-size:11px;">Type</span>
+          </div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('B77W')">
+            <span>🛩️ Flight by aircraft (B777-300ER)</span>
+            <span style="color:#7f8c8d; font-size:11px;">Type</span>
+          </div>
         </div>
       </div>
 
@@ -474,342 +492,4 @@
         L.polyline(remainingCurve, { color: '#000000', weight: 5, opacity: 0.65, dashArray: '8, 10' }).addTo(routeLayerGroup);
         L.polyline(remainingCurve, { color: '#ffd700', weight: 3, opacity: 1.0, dashArray: '8, 10' }).addTo(routeLayerGroup);
 
-        const destIcon = L.divIcon({ className: '', html: '<div class="airport-pin dest"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
-        L.marker(destCoords, { icon: destIcon })
-          .bindTooltip(`ARR: ${ac.arrIcao}`, { permanent: true, direction: 'top', offset: [0, -7], className: 'airport-tooltip dest-lbl' })
-          .addTo(routeLayerGroup);
-      }
-    }
-
-    map.on('click', () => {
-      selectedFlightId = null;
-      routeLayerGroup.clearLayers();
-      updateMarkerHighlights();
-      filterFlights();
-    });
-
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
-    function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
-    function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
-    function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
-
-    function toggleRouteFilterBox() {
-      const box = document.getElementById('routeFilterBox');
-      box.classList.toggle('visible');
-      const sidebar = document.getElementById('sidebar');
-      const toggleBtn = document.getElementById('toggle-btn');
-      if (sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-        toggleBtn.classList.remove('collapsed');
-        setTimeout(() => { map.invalidateSize(); }, 300);
-      }
-      if (box.classList.contains('visible')) {
-        document.getElementById('fromAirport').focus();
-      }
-    }
-
-    function clearRouteFilter() {
-      document.getElementById('fromAirport').value = '';
-      document.getElementById('toAirport').value = '';
-      filterFlights();
-    }
-
-    function buildPopupHtml(ac) {
-      const vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
-      const vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
-      return `
-        <div class="popup-header">
-          <div>
-            <div class="popup-callsign">${ac.flight}</div>
-            <div style="font-size:10px; color:#8b949e;">${ac.airlineDisplay}</div>
-          </div>
-          <span class="popup-type">${ac.type}</span>
-        </div>
-        <div class="popup-route-bar">${ac.depIcao} &rarr; ${ac.arrIcao}</div>
-        <div class="popup-grid">
-          <div class="popup-cell"><div class="popup-lbl">Altitude</div><div class="popup-val">${ac.altBase === 'GND' ? 'GND' : ac.altBase + ' ft'}</div></div>
-          <div class="popup-cell"><div class="popup-lbl">Speed</div><div class="popup-val">${ac.speedBase} kts</div></div>
-          <div class="popup-cell"><div class="popup-lbl">Vert Speed</div><div class="popup-val" style="color:${vsColor};">${vsPrefix}${ac.vSpeedBase} fpm</div></div>
-          <div class="popup-cell"><div class="popup-lbl">Reg</div><div class="popup-val">${ac.reg || 'N/A'}</div></div>
-        </div>
-      `;
-    }
-
-    function fetchRadarData() {
-      fetch(FIREBASE_ENDPOINT)
-        .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline'); return res.json(); })
-        .then(data => {
-        let activeFlights = new Set();
-        flightDataStore = [];
-
-        if (!data) throw new Error('Awaiting ESP32 Uplink');
-
-        for (let key in data) {
-          if (key === 'full_count' || key === 'version' || key === 'stats') continue;
-          let ac = data[key];
-          if (!ac || ac.length < 14) continue;
-          
-          let flight = ac[16] || ac[13] || ac[0] || 'N/A';
-          activeFlights.add(flight);
-          
-          let opCode = flight.length >= 3 ? flight.substring(0, 3).toUpperCase() : 'N/A';
-          let airlineName = airlines[opCode] ? airlines[opCode] : opCode;
-          let airlineDisplay = (airlineName === opCode || opCode === 'N/A') ? opCode : `${airlineName} (${opCode})`;
-          
-          let logoUrl = 'https://flightaware.com/images/airline_logos/90p/' + opCode + '.png';
-          let lat = ac[1];
-          let lng = ac[2];
-          let heading = ac[3] || 0;
-          let altBase = ac[4] || 0;
-          let speedBase = ac[5] || 0;
-          let vSpeedBase = ac[15] || 0;
-          let type = ac[8] || 'Unknown';
-          let reg = ac[9] || '';
-          let rawDep = (ac[11] || '').toUpperCase();
-          let rawArr = (ac[12] || '').toUpperCase();
-          let depIcao = resolveIcao(rawDep);
-          let arrIcao = resolveIcao(rawArr);
-          if (altBase < 50) altBase = 'GND';
-
-          if (!flightTrails[flight]) flightTrails[flight] = [];
-          const trail = flightTrails[flight];
-          const lastPt = trail[trail.length - 1];
-          if (!lastPt || Math.abs(lastPt[0] - lat) > 0.0005 || Math.abs(lastPt[1] - lng) > 0.0005) {
-            trail.push([lat, lng]);
-            if (trail.length > 180) trail.shift();
-          }
-
-          const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, vSpeedBase, heading, reg, rawDep, rawArr, depIcao, arrIcao, type, lat, lng };
-          flightDataStore.push(acObj);
-
-          const isSel = (flight === selectedFlightId);
-          let popupContent = buildPopupHtml(acObj);
-          let rotIcon = createPlaneIcon(heading, isSel);
-          
-          if (markers[flight]) {
-            markers[flight].setLatLng([lat, lng]);
-            markers[flight].setPopupContent(popupContent);
-            markers[flight].setIcon(rotIcon);
-            markers[flight].setZIndexOffset(isSel ? 1000 : 0);
-          } else {
-            let marker = L.marker([lat, lng], { icon: rotIcon, zIndexOffset: isSel ? 1000 : 0 });
-            if (document.getElementById('set-tooltip').checked) marker.bindTooltip(flight, { direction: 'top', offset: [0, -8] });
-            marker.bindPopup(popupContent);
-            marker.on('click', (e) => {
-              L.DomEvent.stopPropagation(e);
-              selectFlight(flight);
-            });
-            markers[flight] = marker;
-          }
-        }
-
-        for (let f in markers) {
-          if (!activeFlights.has(f)) {
-            map.removeLayer(markers[f]);
-            delete markers[f];
-            delete flightTrails[f];
-          }
-        }
-
-        if (selectedFlightId) {
-          const updatedSelected = flightDataStore.find(a => a.flight === selectedFlightId);
-          if (updatedSelected) drawFlightRoute(updatedSelected);
-          else routeLayerGroup.clearLayers();
-        }
-
-        let statEl = document.getElementById('status');
-        statEl.innerText = 'Live (Cloud Relay)'; statEl.style.color = '#3fb950';
-        filterFlights();
-      }).catch(err => {
-        let statEl = document.getElementById('status');
-        statEl.innerText = err.message; statEl.style.color = '#ff4d4d';
-      });
-    }
-
-    function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
-      const matchesGeneral = generalFilter === '' ||
-        item.flight.toUpperCase().includes(generalFilter) ||
-        item.type.toUpperCase().includes(generalFilter) ||
-        item.opCode.toUpperCase().includes(generalFilter) ||
-        item.airlineDisplay.toUpperCase().includes(generalFilter) ||
-        item.reg.toUpperCase().includes(generalFilter) ||
-        item.depIcao.toUpperCase().includes(generalFilter) ||
-        item.arrIcao.toUpperCase().includes(generalFilter);
-
-      const matchesFrom = fromQuery === '' ||
-        item.depIcao.toUpperCase().includes(fromQuery) ||
-        item.rawDep.includes(fromQuery) ||
-        (resolvedFrom !== '' && item.depIcao.toUpperCase() === resolvedFrom);
-
-      const matchesTo = toQuery === '' ||
-        item.arrIcao.toUpperCase().includes(toQuery) ||
-        item.rawArr.includes(toQuery) ||
-        (resolvedTo !== '' && item.arrIcao.toUpperCase() === resolvedTo);
-
-      return matchesGeneral && matchesFrom && matchesTo;
-    }
-
-    function filterFlights() {
-      let listContainer = document.getElementById('flight-list');
-      let filter = document.getElementById('searchBox').value.trim().toUpperCase();
-      let fromQuery = document.getElementById('fromAirport').value.trim().toUpperCase();
-      let toQuery = document.getElementById('toAirport').value.trim().toUpperCase();
-
-      document.getElementById('clearRouteBtn').style.display = (fromQuery || toQuery) ? 'inline-block' : 'none';
-
-      const resolvedFrom = fromQuery.length === 3 ? resolveIcao(fromQuery) : '';
-      const resolvedTo = toQuery.length === 3 ? resolveIcao(toQuery) : '';
-
-      let hidePhoto = document.getElementById('set-hidephoto').checked;
-      let speedUnit = document.getElementById('set-speed').value;
-      let vspeedUnit = document.getElementById('set-vspeed').value;
-      let altUnit = document.getElementById('set-alt').value;
-      listContainer.innerHTML = '';
-
-      let filtered = flightDataStore.filter(item =>
-        matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo)
-      );
-
-      flightDataStore.forEach(item => {
-        if (markers[item.flight]) {
-          let isVisible = matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo);
-          if (isVisible) {
-            if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
-            let tooltipOn = document.getElementById('set-tooltip').checked;
-            if (tooltipOn && !markers[item.flight].getTooltip()) markers[item.flight].bindTooltip(item.flight, { direction: 'top', offset: [0, -8] });
-            else if (!tooltipOn && markers[item.flight].getTooltip()) markers[item.flight].unbindTooltip();
-          } else {
-            if (map.hasLayer(markers[item.flight])) map.removeLayer(markers[item.flight]);
-          }
-        }
-      });
-
-      document.getElementById('ac-count').innerText = filtered.length;
-
-      if (selectedFlightId) {
-        const idx = filtered.findIndex(ac => ac.flight === selectedFlightId);
-        if (idx > -1) {
-          const [chosen] = filtered.splice(idx, 1);
-          filtered.unshift(chosen);
-        } else if (filter === '' && fromQuery === '' && toQuery === '') {
-          const rawMatch = flightDataStore.find(ac => ac.flight === selectedFlightId);
-          if (rawMatch) filtered.unshift(rawMatch);
-        }
-      }
-
-      if (filtered.length === 0) {
-        listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>';
-        return;
-      }
-
-      let displayLimit = filtered.slice(0, 50);
-      displayLimit.forEach(ac => {
-        let displaySpeed = ac.speedBase; let speedLabel = 'kts';
-        if (speedUnit === 'kmh') { displaySpeed = Math.round(ac.speedBase * 1.852); speedLabel = 'km/h'; }
-        else if (speedUnit === 'mph') { displaySpeed = Math.round(ac.speedBase * 1.15078); speedLabel = 'mph'; }
-        
-        let displayAlt = ac.altBase; let altLabel = 'ft';
-        if (ac.altBase !== 'GND' && altUnit === 'm') { displayAlt = Math.round(ac.altBase / 3.28084); altLabel = 'm'; }
-        if (ac.altBase === 'GND') altLabel = '';
-
-        let vsVal = ac.vSpeedBase;
-        let vsLabel = 'fpm';
-        if (vspeedUnit === 'M/s') {
-          vsVal = (ac.vSpeedBase * 0.00508).toFixed(1);
-          vsLabel = 'm/s';
-        }
-        let vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
-        let vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
-
-        let card = document.createElement('div');
-        card.className = 'flight-card'; card.id = 'card-' + ac.flight;
-        if (ac.flight === selectedFlightId) {
-          card.style.borderColor = '#00d2ff';
-          card.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.35)';
-        }
-        
-        card.innerHTML = `
-          <div class="flight-title">
-            <div style="display:flex; align-items:center;">
-              <img src="${ac.logoUrl}" class="airline-logo" onerror="this.style.display='none'">
-              <div>
-                <span style="line-height:1.2;">${ac.flight}</span>
-                <div style="font-size:11px; color:#8b949e; font-weight:normal; margin-top:2px;">${ac.airlineDisplay}</div>
-              </div>
-            </div>
-            <span style="font-size:11px; background:#21262d; padding:2px 6px; border-radius:4px; color:#00d2ff;">${ac.type}</span>
-          </div>
-          <div class="reg-subtext">REG: ${ac.reg || 'N/A'}</div>
-          ${(!hidePhoto ? `<div class="ac-photo-container" id="photo-box-${ac.flight}"><div class="ac-photo-loading">Loading photo...</div></div>` : '')}
-          <div class="flight-details">
-            <div class="stat-box"><div class="stat-label">Altitude</div><div class="stat-val">${displayAlt} ${altLabel}</div></div>
-            <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-val">${displaySpeed} ${speedLabel}</div></div>
-            <div class="stat-box"><div class="stat-label">Heading</div><div class="stat-val">${ac.heading}&deg;</div></div>
-            <div class="stat-box"><div class="stat-label">Vert Speed</div><div class="stat-val" style="color:${vsColor};">${vsPrefix}${vsVal} ${vsLabel}</div></div>
-            <div class="stat-box" style="grid-column: span 2;"><div class="stat-label">Route (ICAO)</div><div class="stat-val" style="color:#00d2ff; font-size:11px;">${ac.depIcao} &rarr; ${ac.arrIcao}</div></div>
-          </div>
-        `;
-        
-        card.onclick = () => {
-          map.setView([ac.lat, ac.lng], 6);
-          selectFlight(ac.flight);
-          if (window.innerWidth <= 600) toggleSidebar();
-          if (markers[ac.flight]) markers[ac.flight].openPopup();
-        };
-        listContainer.appendChild(card);
-        
-        if (!hidePhoto && ac.reg && ac.reg !== '') {
-          if (photoCache[ac.flight]) { showPhoto(ac.flight, photoCache[ac.flight]); }
-          else { fetchAircraftPhoto(ac.flight, ac.reg); }
-        }
-      });
-    }
-
-    function fetchAircraftPhoto(flight, reg) {
-      let box = document.getElementById('photo-box-' + flight);
-      if (!box) return;
-      fetch('https://api.planespotters.net/pub/photos/reg/' + reg)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.photos && data.photos.length > 0) {
-            let photoUrl = data.photos[0].thumbnail_large ? data.photos[0].thumbnail_large.src : data.photos[0].thumbnail.src;
-            photoCache[flight] = photoUrl; showPhoto(flight, photoUrl);
-          } else { box.style.display = 'none'; }
-        }).catch(() => { box.style.display = 'none'; });
-    }
-
-    function showPhoto(flight, url) {
-      let box = document.getElementById('photo-box-' + flight);
-      if (box) { box.style.display = 'block'; box.innerHTML = `<img src="${url}" class="ac-photo" alt="Aircraft Photo">`; }
-    }
-
-    function selectFlight(flight) {
-      selectedFlightId = flight;
-      updateMarkerHighlights();
-
-      const acObj = flightDataStore.find(a => a.flight === flight);
-      if (acObj) drawFlightRoute(acObj);
-
-      const sidebar = document.getElementById('sidebar');
-      const toggleBtn = document.getElementById('toggle-btn');
-      if (sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-        toggleBtn.classList.remove('collapsed');
-        setTimeout(() => { map.invalidateSize(); }, 300);
-      }
-
-      filterFlights();
-
-      const el = document.getElementById('card-' + flight);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        el.style.borderColor = '#00d2ff';
-        el.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.35)';
-      }
-    }
-
-    setInterval(fetchRadarData, 10000);
-    fetchRadarData();
-  </script>
-</body>
-</html>
+        const destIcon = L.divIcon({
