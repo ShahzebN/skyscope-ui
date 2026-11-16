@@ -33,6 +33,17 @@
     .airport-tooltip.dest-lbl { color: #ffd700 !important; }
     .airport-tooltip::before { display: none !important; }
 
+    /* Highlighted Selected Aircraft Marker */
+    .plane-wrapper { position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+    .plane-icon { font-size: 20px; text-align: center; line-height: 20px; transition: transform 0.3s ease-in-out; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); z-index: 2; }
+    .plane-wrapper.selected .plane-icon { font-size: 26px; filter: drop-shadow(0 0 8px #00d2ff) drop-shadow(0 0 14px #ffd700); }
+    .selected-ring { position: absolute; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #00d2ff; background: rgba(0, 210, 255, 0.16); box-shadow: 0 0 14px rgba(0, 210, 255, 0.9), inset 0 0 8px rgba(255, 215, 0, 0.5); animation: radarLock 1.6s infinite ease-out; pointer-events: none; z-index: 1; }
+    @keyframes radarLock {
+      0% { transform: scale(0.85); opacity: 1; border-color: #00d2ff; }
+      70% { transform: scale(1.35); opacity: 0.45; border-color: #ffd700; }
+      100% { transform: scale(1.5); opacity: 0; border-color: #00d2ff; }
+    }
+
     #sidebar { position: absolute; top: 15px; left: 15px; width: 340px; height: calc(100vh - 90px); background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); z-index: 1000; border-radius: 12px; border: 1px solid #2a323d; box-shadow: 0 12px 35px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease-in-out; }
     #sidebar.collapsed { transform: translateX(-370px); }
     
@@ -108,7 +119,6 @@
     .stat-val { font-size: 12px; font-weight: bold; color: #fff; }
     .status-bar { padding: 8px 16px; background: #161b22; border-top: 1px solid #2a323d; font-size: 11px; color: #8b949e; display: flex; justify-content: space-between; }
     #status { color: #3fb950; font-weight: bold; }
-    .plane-icon { font-size: 20px; text-align: center; line-height: 20px; transition: transform 0.4s ease-in-out; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
     
     @media (max-width: 600px) {
       #sidebar { width: calc(100vw - 30px); height: calc(100vh - 150px); }
@@ -253,7 +263,8 @@
       'THA': 'Thai Airways', 'TAX': 'Thai AirAsia X', 'AIQ': 'Thai AirAsia', 'SLM': 'Thai Lion Air',
       'NJA': 'NetJets', 'BOX': 'AeroLogic', 'GEC': 'Lufthansa Cargo', 'FDX': 'FedEx', 'UPS': 'UPS Airlines',
       'IRA': 'Iran Air', 'IRM': 'Mahan Air', 'IZG': 'Zagros Airlines', 'SYR': 'Syrian Air', 'IAW': 'Iraqi Airways',
-      'BCS': 'European Air Transport Leipzig', 'CLX': 'Cargolux', 'GTI': 'Atlas Air', 'ABW': 'AirBridgeCargo'
+      'BCS': 'European Air Transport Leipzig', 'CLX': 'Cargolux', 'GTI': 'Atlas Air', 'ABW': 'AirBridgeCargo',
+      'AFL': 'Aeroflot', 'SBI': 'S7 Airlines', 'SVR': 'Ural Airlines', 'PBD': 'Pobeda'
     };
 
     const airportDb = {
@@ -283,6 +294,8 @@
       'ESB': { icao: 'LTAC', lat: 40.128, lon: 32.995 }, 'AYT': { icao: 'LTAI', lat: 36.898, lon: 30.800 },
       'GYD': { icao: 'UBBB', lat: 40.467, lon: 50.046 }, 'TAS': { icao: 'UTTT', lat: 41.257, lon: 69.281 },
       'ALA': { icao: 'UAAA', lat: 43.352, lon: 77.040 }, 'NQZ': { icao: 'UACC', lat: 51.022, lon: 71.466 },
+      'SVO': { icao: 'UUEE', lat: 55.972, lon: 37.414 }, 'DME': { icao: 'UUDD', lat: 55.408, lon: 37.906 },
+      'VKO': { icao: 'UUWW', lat: 55.591, lon: 37.261 }, 'LED': { icao: 'ULLI', lat: 59.800, lon: 30.262 },
       'HKG': { icao: 'VHHH', lat: 22.308, lon: 113.918 }, 'PVG': { icao: 'ZSPD', lat: 31.143, lon: 121.805 },
       'PEK': { icao: 'ZBAA', lat: 40.080, lon: 116.584 }, 'CAN': { icao: 'ZGGG', lat: 23.392, lon: 113.298 },
       'ICN': { icao: 'RKSI', lat: 37.469, lon: 126.450 }, 'NRT': { icao: 'RJAA', lat: 35.764, lon: 140.386 },
@@ -329,6 +342,35 @@
       return icaoCoords[icao.toUpperCase()] || null;
     }
 
+    // Spherical Great-Circle Interpolation for Realistic Geodesic Flight Paths
+    function computeGreatCircle(start, end, segments = 40) {
+      const toRad = d => d * Math.PI / 180;
+      const toDeg = r => r * 180 / Math.PI;
+      const lat1 = toRad(start[0]), lon1 = toRad(start[1]);
+      const lat2 = toRad(end[0]), lon2 = toRad(end[1]);
+
+      const d = 2 * Math.asin(Math.sqrt(
+        Math.pow(Math.sin((lat2 - lat1) / 2), 2) +
+        Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin((lon2 - lon1) / 2), 2)
+      ));
+
+      if (!d || d < 0.0001) return [start, end];
+
+      const points = [];
+      for (let i = 0; i <= segments; i++) {
+        const f = i / segments;
+        const A = Math.sin((1 - f) * d) / Math.sin(d);
+        const B = Math.sin(f * d) / Math.sin(d);
+        const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+        const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+        const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+        const lat = toDeg(Math.atan2(z, Math.sqrt(x * x + y * y)));
+        const lon = toDeg(Math.atan2(y, x));
+        points.push([lat, lon]);
+      }
+      return points;
+    }
+
     const map = L.map('map', { zoomControl: false }).setView([26.0, 52.0], 5);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 3, attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -367,9 +409,31 @@
 
     let markers = {};
     let flightDataStore = [];
+    let flightTrails = {}; // Stores live GPS history breadcrumbs per flight
     let photoCache = {};
     let selectedFlightId = null;
     let routeLayerGroup = L.layerGroup().addTo(map);
+
+    function createPlaneIcon(heading, isSelected) {
+      const selClass = isSelected ? 'selected' : '';
+      const ringHtml = isSelected ? '<div class="selected-ring"></div>' : '';
+      return L.divIcon({
+        className: '',
+        html: `<div class="plane-wrapper ${selClass}">${ringHtml}<div class="plane-icon" style="transform: rotate(${heading - 45}deg);">✈️</div></div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+    }
+
+    function updateMarkerHighlights() {
+      for (const ac of flightDataStore) {
+        const marker = markers[ac.flight];
+        if (!marker) continue;
+        const isSel = (ac.flight === selectedFlightId);
+        marker.setIcon(createPlaneIcon(ac.heading, isSel));
+        marker.setZIndexOffset(isSel ? 1000 : 0);
+      }
+    }
 
     function drawFlightRoute(ac) {
       routeLayerGroup.clearLayers();
@@ -378,12 +442,16 @@
       const origCoords = getAirportCoords(ac.depIcao);
       const destCoords = getAirportCoords(ac.arrIcao);
       const planeCoords = [ac.lat, ac.lng];
+      const recordedTrail = flightTrails[ac.flight] || [planeCoords];
+      const firstRecordedPoint = recordedTrail[0];
 
+      // 1. Geodesic Great-Circle arc from Origin Airport to first recorded live breadcrumb
       if (origCoords) {
-        L.polyline([origCoords, planeCoords], {
+        const priorCurve = computeGreatCircle(origCoords, firstRecordedPoint, 35);
+        L.polyline(priorCurve, {
           color: '#00d2ff',
-          weight: 3,
-          opacity: 0.95
+          weight: 2.5,
+          opacity: 0.55
         }).addTo(routeLayerGroup);
 
         const origIcon = L.divIcon({ className: '', html: '<div class="airport-pin origin"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
@@ -392,15 +460,44 @@
           .addTo(routeLayerGroup);
       }
 
+      // 2. Exact recorded GPS breadcrumb path followed by the aircraft
+      if (recordedTrail.length > 1) {
+        L.polyline(recordedTrail, {
+          color: '#000000',
+          weight: 5,
+          opacity: 0.6
+        }).addTo(routeLayerGroup);
+
+        L.polyline(recordedTrail, {
+          color: '#00d2ff',
+          weight: 3.5,
+          opacity: 1.0
+        }).addTo(routeLayerGroup);
+
+        recordedTrail.forEach((pt, idx) => {
+          if (idx < recordedTrail.length - 1) {
+            L.circleMarker(pt, {
+              radius: 2.5,
+              color: '#ffffff',
+              weight: 1,
+              fillColor: '#00d2ff',
+              fillOpacity: 0.95
+            }).addTo(routeLayerGroup);
+          }
+        });
+      }
+
+      // 3. Curved Great-Circle dashed trajectory from Aircraft to Destination Airport
       if (destCoords) {
-        L.polyline([planeCoords, destCoords], {
+        const remainingCurve = computeGreatCircle(planeCoords, destCoords, 35);
+        L.polyline(remainingCurve, {
           color: '#000000',
           weight: 5,
           opacity: 0.65,
           dashArray: '8, 10'
         }).addTo(routeLayerGroup);
 
-        L.polyline([planeCoords, destCoords], {
+        L.polyline(remainingCurve, {
           color: '#ffd700',
           weight: 3,
           opacity: 1.0,
@@ -417,6 +514,7 @@
     map.on('click', () => {
       selectedFlightId = null;
       routeLayerGroup.clearLayers();
+      updateMarkerHighlights();
       filterFlights();
     });
 
@@ -499,19 +597,30 @@
           let arrIcao = resolveIcao(rawArr);
           if (altBase < 50) altBase = 'GND';
 
+          // Record exact live GPS coordinate breadcrumb
+          if (!flightTrails[flight]) flightTrails[flight] = [];
+          const trail = flightTrails[flight];
+          const lastPt = trail[trail.length - 1];
+          if (!lastPt || Math.abs(lastPt[0] - lat) > 0.0005 || Math.abs(lastPt[1] - lng) > 0.0005) {
+            trail.push([lat, lng]);
+            if (trail.length > 180) trail.shift(); // Keep last ~30 mins of breadcrumb history
+          }
+
           const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, vSpeedBase, heading, reg, rawDep, rawArr, depIcao, arrIcao, type, lat, lng };
           flightDataStore.push(acObj);
 
+          const isSel = (flight === selectedFlightId);
           let popupContent = buildPopupHtml(acObj);
-          let rotIcon = L.divIcon({ className: '', html: `<div class="plane-icon" style="transform: rotate(${heading - 45}deg);">✈️</div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+          let rotIcon = createPlaneIcon(heading, isSel);
           
           if (markers[flight]) {
             markers[flight].setLatLng([lat, lng]);
             markers[flight].setPopupContent(popupContent);
             markers[flight].setIcon(rotIcon);
+            markers[flight].setZIndexOffset(isSel ? 1000 : 0);
           } else {
-            let marker = L.marker([lat, lng], { icon: rotIcon });
-            if (document.getElementById('set-tooltip').checked) marker.bindTooltip(flight, { direction: 'top', offset: [0, -5] });
+            let marker = L.marker([lat, lng], { icon: rotIcon, zIndexOffset: isSel ? 1000 : 0 });
+            if (document.getElementById('set-tooltip').checked) marker.bindTooltip(flight, { direction: 'top', offset: [0, -8] });
             marker.bindPopup(popupContent);
             marker.on('click', (e) => {
               L.DomEvent.stopPropagation(e);
@@ -522,7 +631,11 @@
         }
 
         for (let f in markers) {
-          if (!activeFlights.has(f)) { map.removeLayer(markers[f]); delete markers[f]; }
+          if (!activeFlights.has(f)) {
+            map.removeLayer(markers[f]);
+            delete markers[f];
+            delete flightTrails[f];
+          }
         }
 
         if (selectedFlightId) {
@@ -550,13 +663,11 @@
         item.depIcao.toUpperCase().includes(generalFilter) ||
         item.arrIcao.toUpperCase().includes(generalFilter);
 
-      // If FROM is entered, match departure ICAO or IATA; if empty, allow all departures
       const matchesFrom = fromQuery === '' ||
         item.depIcao.toUpperCase().includes(fromQuery) ||
         item.rawDep.includes(fromQuery) ||
         (resolvedFrom !== '' && item.depIcao.toUpperCase() === resolvedFrom);
 
-      // If TO is entered, match arrival ICAO or IATA; if empty, allow all arrivals
       const matchesTo = toQuery === '' ||
         item.arrIcao.toUpperCase().includes(toQuery) ||
         item.rawArr.includes(toQuery) ||
@@ -571,7 +682,6 @@
       let fromQuery = document.getElementById('fromAirport').value.trim().toUpperCase();
       let toQuery = document.getElementById('toAirport').value.trim().toUpperCase();
 
-      // Toggle Clear button visibility when FROM or TO has text
       document.getElementById('clearRouteBtn').style.display = (fromQuery || toQuery) ? 'inline-block' : 'none';
 
       const resolvedFrom = fromQuery.length === 3 ? resolveIcao(fromQuery) : '';
@@ -593,7 +703,7 @@
           if (isVisible) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
-            if (tooltipOn && !markers[item.flight].getTooltip()) markers[item.flight].bindTooltip(item.flight, { direction: 'top', offset: [0, -5] });
+            if (tooltipOn && !markers[item.flight].getTooltip()) markers[item.flight].bindTooltip(item.flight, { direction: 'top', offset: [0, -8] });
             else if (!tooltipOn && markers[item.flight].getTooltip()) markers[item.flight].unbindTooltip();
           } else {
             if (map.hasLayer(markers[item.flight])) map.removeLayer(markers[item.flight]);
@@ -601,7 +711,6 @@
         }
       });
 
-      // Update badge count to reflect active filtered aircraft count
       document.getElementById('ac-count').innerText = filtered.length;
 
       if (selectedFlightId) {
@@ -703,6 +812,8 @@
 
     function selectFlight(flight) {
       selectedFlightId = flight;
+      updateMarkerHighlights();
+
       const acObj = flightDataStore.find(a => a.flight === flight);
       if (acObj) drawFlightRoute(acObj);
 
