@@ -75,28 +75,12 @@
     .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #2a323d; background: #161b22; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header h2 { color: #00d2ff; margin: 0; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; }
     
-    .search-container { position: relative; margin-bottom: 10px; }
+    .search-container { position: relative; margin-bottom: 15px; }
     .search-input { width: 100%; box-sizing: border-box; background: #161b22; border: 1px solid #30363d; color: #fff; padding: 10px 14px 10px 36px; border-radius: 8px; font-size: 13px; transition: border-color 0.2s; }
     .search-input:focus { outline: none; border-color: #00d2ff; }
     .search-icon { position: absolute; left: 12px; top: 11px; color: #7f8c8d; font-size: 14px; }
-
-    /* FROM / TO Route Filter Box */
-    .route-filter-box { background: #11161d; border: 1px solid #2a323d; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
-    .route-filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .route-filter-title { font-size: 10px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.6px; }
-    .route-clear-btn { background: none; border: none; color: #00d2ff; font-size: 11px; cursor: pointer; padding: 0; font-weight: 600; display: none; }
-    .route-clear-btn:hover { text-decoration: underline; }
-    .route-field-group { margin-bottom: 8px; }
-    .route-field-group:last-child { margin-bottom: 0; }
-    .route-field-label { display: block; font-size: 10px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .route-input-wrap { position: relative; display: flex; align-items: center; }
-    .route-plane-svg { position: absolute; left: 10px; width: 16px; height: 16px; stroke: #7f8c8d; fill: none; stroke-width: 1.8; pointer-events: none; transition: stroke 0.2s; }
-    .route-input { width: 100%; box-sizing: border-box; background: #161b22; border: 1.5px solid #30363d; color: #fff; padding: 8px 10px 8px 34px; border-radius: 7px; font-size: 12px; text-transform: uppercase; transition: border-color 0.2s, box-shadow 0.2s; }
-    .route-input::placeholder { text-transform: none; color: #6e7681; }
-    .route-input:focus { outline: none; border-color: #f5b400; box-shadow: 0 0 0 2px rgba(245, 180, 0, 0.18); }
-    .route-input-wrap:focus-within .route-plane-svg { stroke: #f5b400; }
     
-    #search-shortcuts { position: absolute; top: 46px; left: 0; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 2000; display: none; max-height: 250px; overflow-y: auto; }
+    #search-shortcuts { position: absolute; top: 46px; left: 0; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 2000; display: none; max-height: 260px; overflow-y: auto; }
     .shortcut-category { padding: 8px 12px; font-size: 10px; color: #00d2ff; background: #21262d; text-transform: uppercase; font-weight: bold; border-bottom: 1px solid #30363d; }
     .shortcut-item { padding: 9px 14px; font-size: 13px; color: #c9d1d9; cursor: pointer; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; }
     .shortcut-item:hover { background: #30363d; color: #fff; }
@@ -141,38 +125,16 @@
     <div class="sidebar-content">
       <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, airline, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
+        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, airline, type, route..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
         <div id="search-shortcuts">
           <div class="shortcut-category">Quick Filters</div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('UAE')"><span>🛫 Airline (e.g. UAE)</span><span style="color:#7f8c8d;">Airline</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('OPIS')"><span>📍 Route / Airport (e.g. OPIS)</span><span style="color:#7f8c8d;">Route</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('OMDB')"><span>📍 Route / Airport (e.g. OMDB)</span><span style="color:#7f8c8d;">Route</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('UAE')"><span>🛫 Airline (e.g. Emirates / UAE)</span><span style="color:#7f8c8d;">Airline</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('PIA')"><span>🛫 Airline (e.g. PIA)</span><span style="color:#7f8c8d;">Airline</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('THY')"><span>🛫 Airline (e.g. Turkish / THY)</span><span style="color:#7f8c8d;">Airline</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('A388')"><span>🛩️ Aircraft Type (e.g. A388)</span><span style="color:#7f8c8d;">Type</span></div>
-        </div>
-      </div>
-
-      <!-- Airport Route Filter (FROM / TO) -->
-      <div class="route-filter-box" id="routeFilterBox">
-        <div class="route-filter-header">
-          <span class="route-filter-title">Airport Route Filter (ICAO / IATA)</span>
-          <button class="route-clear-btn" id="clearRouteBtn" onclick="clearRouteFilter()">Clear</button>
-        </div>
-        <div class="route-field-group">
-          <label class="route-field-label" for="fromAirport">From</label>
-          <div class="route-input-wrap">
-            <svg class="route-plane-svg" viewBox="0 0 24 24">
-              <path d="M2 19h20M4.5 14.5l3.5-1.5 5.5-5.5 3-1c1.1-.4 2.2.3 2.4 1.4.2 1-.4 1.9-1.4 2.3L9 14l-2.5 2-2-.5z"/>
-            </svg>
-            <input type="text" id="fromAirport" class="route-input" placeholder="Departure airport (e.g. OPIS)" oninput="filterFlights()">
-          </div>
-        </div>
-        <div class="route-field-group">
-          <label class="route-field-label" for="toAirport">To</label>
-          <div class="route-input-wrap">
-            <svg class="route-plane-svg" viewBox="0 0 24 24">
-              <path d="M2 19h20M4.5 8.5l2.5 2 8.5 3.8c1 .4 1.6 1.3 1.4 2.3-.2 1.1-1.3 1.8-2.4 1.4l-3-1-5.5-5.5-3.5-1.5z"/>
-            </svg>
-            <input type="text" id="toAirport" class="route-input" placeholder="Arrival airport (e.g. OMDB)" oninput="filterFlights()">
-          </div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('B77W')"><span>🛩️ Aircraft Type (e.g. B77W)</span><span style="color:#7f8c8d;">Type</span></div>
         </div>
       </div>
 
@@ -189,7 +151,7 @@
   <div id="bottom-dock">
     <div class="dock-item" onclick="openSettings()"><span class="dock-icon">⚙️</span>Settings</div>
     <div class="dock-item" onclick="toggleWeatherMenu()"><span class="dock-icon">⛅</span>Weather</div>
-    <div class="dock-item" onclick="focusRouteFilters()"><span class="dock-icon">🎛️</span>Filters</div>
+    <div class="dock-item" onclick="focusSearch()"><span class="dock-icon">🎛️</span>Filters</div>
   </div>
 
   <div id="weather-panel">
@@ -342,7 +304,6 @@
       return icaoCoords[icao.toUpperCase()] || null;
     }
 
-    // Spherical Great-Circle Interpolation for Realistic Geodesic Flight Paths
     function computeGreatCircle(start, end, segments = 40) {
       const toRad = d => d * Math.PI / 180;
       const toDeg = r => r * 180 / Math.PI;
@@ -409,7 +370,7 @@
 
     let markers = {};
     let flightDataStore = [];
-    let flightTrails = {}; // Stores live GPS history breadcrumbs per flight
+    let flightTrails = {};
     let photoCache = {};
     let selectedFlightId = null;
     let routeLayerGroup = L.layerGroup().addTo(map);
@@ -445,14 +406,9 @@
       const recordedTrail = flightTrails[ac.flight] || [planeCoords];
       const firstRecordedPoint = recordedTrail[0];
 
-      // 1. Geodesic Great-Circle arc from Origin Airport to first recorded live breadcrumb
       if (origCoords) {
         const priorCurve = computeGreatCircle(origCoords, firstRecordedPoint, 35);
-        L.polyline(priorCurve, {
-          color: '#00d2ff',
-          weight: 2.5,
-          opacity: 0.55
-        }).addTo(routeLayerGroup);
+        L.polyline(priorCurve, { color: '#00d2ff', weight: 2.5, opacity: 0.55 }).addTo(routeLayerGroup);
 
         const origIcon = L.divIcon({ className: '', html: '<div class="airport-pin origin"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
         L.marker(origCoords, { icon: origIcon })
@@ -460,49 +416,21 @@
           .addTo(routeLayerGroup);
       }
 
-      // 2. Exact recorded GPS breadcrumb path followed by the aircraft
       if (recordedTrail.length > 1) {
-        L.polyline(recordedTrail, {
-          color: '#000000',
-          weight: 5,
-          opacity: 0.6
-        }).addTo(routeLayerGroup);
-
-        L.polyline(recordedTrail, {
-          color: '#00d2ff',
-          weight: 3.5,
-          opacity: 1.0
-        }).addTo(routeLayerGroup);
+        L.polyline(recordedTrail, { color: '#000000', weight: 5, opacity: 0.6 }).addTo(routeLayerGroup);
+        L.polyline(recordedTrail, { color: '#00d2ff', weight: 3.5, opacity: 1.0 }).addTo(routeLayerGroup);
 
         recordedTrail.forEach((pt, idx) => {
           if (idx < recordedTrail.length - 1) {
-            L.circleMarker(pt, {
-              radius: 2.5,
-              color: '#ffffff',
-              weight: 1,
-              fillColor: '#00d2ff',
-              fillOpacity: 0.95
-            }).addTo(routeLayerGroup);
+            L.circleMarker(pt, { radius: 2.5, color: '#ffffff', weight: 1, fillColor: '#00d2ff', fillOpacity: 0.95 }).addTo(routeLayerGroup);
           }
         });
       }
 
-      // 3. Curved Great-Circle dashed trajectory from Aircraft to Destination Airport
       if (destCoords) {
         const remainingCurve = computeGreatCircle(planeCoords, destCoords, 35);
-        L.polyline(remainingCurve, {
-          color: '#000000',
-          weight: 5,
-          opacity: 0.65,
-          dashArray: '8, 10'
-        }).addTo(routeLayerGroup);
-
-        L.polyline(remainingCurve, {
-          color: '#ffd700',
-          weight: 3,
-          opacity: 1.0,
-          dashArray: '8, 10'
-        }).addTo(routeLayerGroup);
+        L.polyline(remainingCurve, { color: '#000000', weight: 5, opacity: 0.65, dashArray: '8, 10' }).addTo(routeLayerGroup);
+        L.polyline(remainingCurve, { color: '#ffd700', weight: 3, opacity: 1.0, dashArray: '8, 10' }).addTo(routeLayerGroup);
 
         const destIcon = L.divIcon({ className: '', html: '<div class="airport-pin dest"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
         L.marker(destCoords, { icon: destIcon })
@@ -523,7 +451,7 @@
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
 
-    function focusRouteFilters() {
+    function focusSearch() {
       const sidebar = document.getElementById('sidebar');
       const toggleBtn = document.getElementById('toggle-btn');
       if (sidebar.classList.contains('collapsed')) {
@@ -531,13 +459,7 @@
         toggleBtn.classList.remove('collapsed');
         setTimeout(() => { map.invalidateSize(); }, 300);
       }
-      document.getElementById('fromAirport').focus();
-    }
-
-    function clearRouteFilter() {
-      document.getElementById('fromAirport').value = '';
-      document.getElementById('toAirport').value = '';
-      filterFlights();
+      document.getElementById('searchBox').focus();
     }
 
     function buildPopupHtml(ac) {
@@ -597,13 +519,12 @@
           let arrIcao = resolveIcao(rawArr);
           if (altBase < 50) altBase = 'GND';
 
-          // Record exact live GPS coordinate breadcrumb
           if (!flightTrails[flight]) flightTrails[flight] = [];
           const trail = flightTrails[flight];
           const lastPt = trail[trail.length - 1];
           if (!lastPt || Math.abs(lastPt[0] - lat) > 0.0005 || Math.abs(lastPt[1] - lng) > 0.0005) {
             trail.push([lat, lng]);
-            if (trail.length > 180) trail.shift(); // Keep last ~30 mins of breadcrumb history
+            if (trail.length > 180) trail.shift();
           }
 
           const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, vSpeedBase, heading, reg, rawDep, rawArr, depIcao, arrIcao, type, lat, lng };
@@ -653,39 +574,45 @@
       });
     }
 
-    function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
-      const matchesGeneral = generalFilter === '' ||
-        item.flight.toUpperCase().includes(generalFilter) ||
-        item.type.toUpperCase().includes(generalFilter) ||
-        item.opCode.toUpperCase().includes(generalFilter) ||
-        item.airlineDisplay.toUpperCase().includes(generalFilter) ||
-        item.reg.toUpperCase().includes(generalFilter) ||
-        item.depIcao.toUpperCase().includes(generalFilter) ||
-        item.arrIcao.toUpperCase().includes(generalFilter);
+    // Advanced Unified Query Parser supporting: "DXB->LHR", "DXB->", "->LHR", "DXB", "UAE", etc.
+    function matchesQuery(item, query) {
+      if (!query || query === '') return true;
+      const q = query.trim().toUpperCase();
 
-      const matchesFrom = fromQuery === '' ||
-        item.depIcao.toUpperCase().includes(fromQuery) ||
-        item.rawDep.includes(fromQuery) ||
-        (resolvedFrom !== '' && item.depIcao.toUpperCase() === resolvedFrom);
+      // Check explicit route arrow format (e.g. "DXB->LHR", "OMDB->OPIS", "ISB->")
+      if (q.includes('->')) {
+        const parts = q.split('->');
+        const fromPart = parts[0].trim();
+        const toPart = parts[1].trim();
 
-      const matchesTo = toQuery === '' ||
-        item.arrIcao.toUpperCase().includes(toQuery) ||
-        item.rawArr.includes(toQuery) ||
-        (resolvedTo !== '' && item.arrIcao.toUpperCase() === resolvedTo);
+        const matchFrom = fromPart === '' ||
+          item.depIcao.toUpperCase().includes(fromPart) ||
+          item.rawDep.includes(fromPart);
 
-      return matchesGeneral && matchesFrom && matchesTo;
+        const matchTo = toPart === '' ||
+          item.arrIcao.toUpperCase().includes(toPart) ||
+          item.rawArr.includes(toPart);
+
+        return matchFrom && matchTo;
+      }
+
+      // General search across all fields (Callsign, Airline, Type, Registration, Origin, Destination)
+      return (
+        item.flight.toUpperCase().includes(q) ||
+        item.type.toUpperCase().includes(q) ||
+        item.opCode.toUpperCase().includes(q) ||
+        item.airlineDisplay.toUpperCase().includes(q) ||
+        item.reg.toUpperCase().includes(q) ||
+        item.depIcao.toUpperCase().includes(q) ||
+        item.arrIcao.toUpperCase().includes(q) ||
+        item.rawDep.includes(q) ||
+        item.rawArr.includes(q)
+      );
     }
 
     function filterFlights() {
       let listContainer = document.getElementById('flight-list');
-      let filter = document.getElementById('searchBox').value.trim().toUpperCase();
-      let fromQuery = document.getElementById('fromAirport').value.trim().toUpperCase();
-      let toQuery = document.getElementById('toAirport').value.trim().toUpperCase();
-
-      document.getElementById('clearRouteBtn').style.display = (fromQuery || toQuery) ? 'inline-block' : 'none';
-
-      const resolvedFrom = fromQuery.length === 3 ? resolveIcao(fromQuery) : '';
-      const resolvedTo = toQuery.length === 3 ? resolveIcao(toQuery) : '';
+      let query = document.getElementById('searchBox').value.trim();
 
       let hidePhoto = document.getElementById('set-hidephoto').checked;
       let speedUnit = document.getElementById('set-speed').value;
@@ -693,13 +620,11 @@
       let altUnit = document.getElementById('set-alt').value;
       listContainer.innerHTML = '';
 
-      let filtered = flightDataStore.filter(item =>
-        matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo)
-      );
+      let filtered = flightDataStore.filter(item => matchesQuery(item, query));
 
       flightDataStore.forEach(item => {
         if (markers[item.flight]) {
-          let isVisible = matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo);
+          let isVisible = matchesQuery(item, query);
           if (isVisible) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
@@ -718,7 +643,7 @@
         if (idx > -1) {
           const [chosen] = filtered.splice(idx, 1);
           filtered.unshift(chosen);
-        } else if (filter === '' && fromQuery === '' && toQuery === '') {
+        } else if (query === '') {
           const rawMatch = flightDataStore.find(ac => ac.flight === selectedFlightId);
           if (rawMatch) filtered.unshift(rawMatch);
         }
