@@ -154,7 +154,8 @@
     #status { color: #3fb950; font-weight: bold; }
     
     @media (max-width: 600px) {
-      #floating-search-bar { width: calc(100vw - 120px); top: 12px; }
+      /* Adjusted top position and width to prevent mobile browser UI overlap */
+      #floating-search-bar { width: calc(100vw - 40px); top: 50px; }
       #bottom-dock { bottom: 10px; padding: 4px 10px; gap: 15px; }
       .dock-item { font-size: 9px; padding: 4px 6px; }
       .dock-icon { font-size: 15px; }
