@@ -38,6 +38,15 @@
     .airport-tooltip.dest-lbl { color: #ffd700 !important; }
     .airport-tooltip::before { display: none !important; }
 
+    /* Flightradar24-Style Progress Bar Widget in Sidebar Card */
+    .route-progress-container { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 8px 10px; margin-top: 8px; }
+    .route-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .route-icao-text { font-size: 13px; font-weight: 800; color: #00d2ff; letter-spacing: 0.5px; }
+    .progress-bar-track { position: relative; width: 100%; height: 5px; background: #30363d; border-radius: 3px; margin: 8px 0 6px 0; }
+    .progress-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: #e3b341; border-radius: 3px; }
+    .progress-plane-icon { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
+    .progress-stats-row { display: flex; justify-content: space-between; font-size: 10px; color: #8b949e; font-weight: 600; }
+
     /* Flightradar24-Style Floating Search Bar on Map */
     #floating-search-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 340px; background: rgba(22, 27, 34, 0.92); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 8px; z-index: 2000; display: flex; align-items: center; padding: 8px 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); cursor: text; transition: border-color 0.2s, box-shadow 0.2s; }
     #floating-search-bar:focus-within { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.25); }
@@ -305,6 +314,20 @@
       return icaoCoords[icao.toUpperCase()] || null;
     }
 
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = deg2rad(lat2 - lat1);
+      const dLon = deg2rad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function deg2rad(deg) { return deg * (Math.PI / 180); }
+
     function computeGreatCircle(start, end, segments = 40) {
       const toRad = d => d * Math.PI / 180;
       const toDeg = r => r * 180 / Math.PI;
@@ -428,7 +451,7 @@
       }
     }
 
-    // DRAW ACTUAL FLOWN ROUTE TRAIL
+    // DRAW ACTUAL FLOWN ROUTE TRAIL WITH PROGRESS BAR
     function drawFlightRoute(ac) {
       routeLayerGroup.clearLayers();
       if (!ac) return;
@@ -494,7 +517,6 @@
 
     function syncSearchToSidebar(val) {
       openSidebarFromSearch();
-      document.getElementById('searchBox').value = val;
       filterFlights();
     }
 
@@ -541,7 +563,7 @@
           }
         }
         return { icao, name, count: counts[icao] };
-      }).sort((a, b) => b.count - a.count).slice(0, 5); // Strictly Top 5
+      }).sort((a, b) => b.count - a.count).slice(0, 5);
 
       let listEl = document.getElementById('busiestAirportsList');
       if (sorted.length === 0) {
@@ -667,34 +689,22 @@
       });
     }
 
-    function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
-      const matchesGeneral = generalFilter === '' ||
+    function matchesFilters(item, generalFilter) {
+      if (!generalFilter) return true;
+      return (
         item.flight.toUpperCase().includes(generalFilter) ||
         item.type.toUpperCase().includes(generalFilter) ||
         item.opCode.toUpperCase().includes(generalFilter) ||
         item.airlineDisplay.toUpperCase().includes(generalFilter) ||
         item.reg.toUpperCase().includes(generalFilter) ||
         item.depIcao.toUpperCase().includes(generalFilter) ||
-        item.arrIcao.toUpperCase().includes(generalFilter);
-
-      const matchesFrom = fromQuery === '' ||
-        item.depIcao.toUpperCase().includes(fromQuery) ||
-        item.rawDep.includes(fromQuery) ||
-        (resolvedFrom !== '' && item.depIcao.toUpperCase() === resolvedFrom);
-
-      const matchesTo = toQuery === '' ||
-        item.arrIcao.toUpperCase().includes(toQuery) ||
-        item.rawArr.includes(toQuery) ||
-        (resolvedTo !== '' && item.arrIcao.toUpperCase() === resolvedTo);
-
-      return matchesGeneral && matchesFrom && matchesTo;
+        item.arrIcao.toUpperCase().includes(generalFilter)
+      );
     }
 
     function filterFlights() {
       let listContainer = document.getElementById('flight-list');
       let filter = document.getElementById('floatingSearchInput').value.trim().toUpperCase();
-      let fromQuery = '';
-      let toQuery = '';
 
       let hidePhoto = document.getElementById('set-hidephoto').checked;
       let speedUnit = document.getElementById('set-speed').value;
@@ -702,13 +712,11 @@
       let altUnit = document.getElementById('set-alt').value;
       listContainer.innerHTML = '';
 
-      let filtered = flightDataStore.filter(item =>
-        matchesFilters(item, filter, fromQuery, toQuery, '', '')
-      );
+      let filtered = flightDataStore.filter(item => matchesFilters(item, filter));
 
       flightDataStore.forEach(item => {
         if (markers[item.flight]) {
-          let isVisible = matchesFilters(item, filter, fromQuery, toQuery, '', '');
+          let isVisible = matchesFilters(item, filter);
           if (isVisible) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
@@ -757,6 +765,31 @@
         let vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
         let vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
 
+        // Reintegrated Dynamic Progress Bar Calculations
+        const origCoords = getAirportCoords(ac.depIcao);
+        const destCoords = getAirportCoords(ac.arrIcao);
+        let progressPercent = 50;
+        let distFlownStr = '---';
+        let distRemStr = '---';
+
+        if (origCoords && destCoords) {
+          const totalDist = getDistanceFromLatLonInKm(origCoords[0], origCoords[1], destCoords[0], destCoords[1]);
+          const flownDist = getDistanceFromLatLonInKm(origCoords[0], origCoords[1], ac.lat, ac.lng);
+          const remDist = Math.max(0, totalDist - flownDist);
+          
+          if (totalDist > 0) {
+            progressPercent = Math.min(100, Math.max(0, (flownDist / totalDist) * 100));
+          }
+          const distUnit = document.getElementById('set-dist') ? document.getElementById('set-dist').value : 'Km';
+          let multiplier = 1;
+          let unitLabel = 'km';
+          if (distUnit === 'Nm') { multiplier = 0.539957; unitLabel = 'nm'; }
+          else if (distUnit === 'Miles') { multiplier = 0.621371; unitLabel = 'mi'; }
+
+          distFlownStr = `${Math.round(flownDist * multiplier)} ${unitLabel}`;
+          distRemStr = `${Math.round(remDist * multiplier)} ${unitLabel}`;
+        }
+
         let card = document.createElement('div');
         card.className = 'flight-card'; card.id = 'card-' + ac.flight;
         if (ac.flight === selectedFlightId) {
@@ -776,6 +809,22 @@
             <span style="font-size:11px; background:#21262d; padding:2px 6px; border-radius:4px; color:#00d2ff;">${ac.type}</span>
           </div>
           <div class="reg-subtext">REG: ${ac.reg || 'N/A'}</div>
+          
+          <!-- Reintegrated Flightradar24-Style Progress Bar Widget -->
+          <div class="route-progress-container">
+            <div class="route-header-row">
+              <span class="route-icao-text">${ac.depIcao} &rarr; ${ac.arrIcao}</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+              <div class="progress-plane-icon" style="left: ${progressPercent}%;">✈</div>
+            </div>
+            <div class="progress-stats-row">
+              <span>${distFlownStr} flown</span>
+              <span>${distRemStr} to go</span>
+            </div>
+          </div>
+
           ${(!hidePhoto ? `<div class="ac-photo-container" id="photo-box-${ac.flight}"><div class="ac-photo-loading">Loading photo...</div></div>` : '')}
           <div class="flight-details">
             <div class="stat-box"><div class="stat-label">Altitude</div><div class="stat-val">${displayAlt} ${altLabel}</div></div>
