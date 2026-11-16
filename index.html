@@ -81,7 +81,8 @@
     .search-icon { position: absolute; left: 12px; top: 11px; color: #7f8c8d; font-size: 14px; }
 
     /* Flightradar24-style Route Filter Box (FROM / TO) */
-    .route-filter-box { background: #11161d; border: 1px solid #2a323d; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
+    .route-filter-box { background: #11161d; border: 1px solid #2a323d; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; display: none; }
+    .route-filter-box.visible { display: block; }
     .route-filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .route-filter-title { font-size: 10px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.6px; }
     .route-clear-btn { background: none; border: none; color: #00d2ff; font-size: 11px; cursor: pointer; padding: 0; font-weight: 600; display: none; }
@@ -144,11 +145,11 @@
         <input type="text" id="searchBox" class="search-input" placeholder="Search flight, airline, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
         <div id="search-shortcuts">
           <div class="shortcut-category">Quick Filters</div>
+          <div class="shortcut-item" onmousedown="toggleRouteFilterBox()"><span>📍 Flight by route (FROM / TO)</span><span style="color:#7f8c8d;">Route</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('UAE')"><span>🛫 Airline (e.g. Emirates / UAE)</span><span style="color:#7f8c8d;">Airline</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('PIA')"><span>🛫 Airline (e.g. PIA)</span><span style="color:#7f8c8d;">Airline</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('THY')"><span>🛫 Airline (e.g. Turkish / THY)</span><span style="color:#7f8c8d;">Airline</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('A388')"><span>🛩️ Aircraft Type (e.g. A388)</span><span style="color:#7f8c8d;">Type</span></div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('B77W')"><span>🛩️ Aircraft Type (e.g. B77W)</span><span style="color:#7f8c8d;">Type</span></div>
         </div>
       </div>
 
@@ -191,7 +192,7 @@
   <div id="bottom-dock">
     <div class="dock-item" onclick="openSettings()"><span class="dock-icon">⚙️</span>Settings</div>
     <div class="dock-item" onclick="toggleWeatherMenu()"><span class="dock-icon">⛅</span>Weather</div>
-    <div class="dock-item" onclick="focusRouteFilters()"><span class="dock-icon">🎛️</span>Filters</div>
+    <div class="dock-item" onclick="toggleRouteFilterBox()"><span class="dock-icon">🎛️</span>Filters</div>
   </div>
 
   <div id="weather-panel">
@@ -491,7 +492,9 @@
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
 
-    function focusSearch() {
+    function toggleRouteFilterBox() {
+      const box = document.getElementById('routeFilterBox');
+      box.classList.toggle('visible');
       const sidebar = document.getElementById('sidebar');
       const toggleBtn = document.getElementById('toggle-btn');
       if (sidebar.classList.contains('collapsed')) {
@@ -499,7 +502,15 @@
         toggleBtn.classList.remove('collapsed');
         setTimeout(() => { map.invalidateSize(); }, 300);
       }
-      document.getElementById('searchBox').focus();
+      if (box.classList.contains('visible')) {
+        document.getElementById('fromAirport').focus();
+      }
+    }
+
+    function clearRouteFilter() {
+      document.getElementById('fromAirport').value = '';
+      document.getElementById('toAirport').value = '';
+      filterFlights();
     }
 
     function buildPopupHtml(ac) {
@@ -614,43 +625,39 @@
       });
     }
 
-    // Unified Flightradar24 syntax parser: handles "DXB->LHR", "DXB->", "->LHR", or general text search
-    function matchesQuery(item, query) {
-      if (!query || query === '') return true;
-      const q = query.trim().toUpperCase();
+    function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
+      const matchesGeneral = generalFilter === '' ||
+        item.flight.toUpperCase().includes(generalFilter) ||
+        item.type.toUpperCase().includes(generalFilter) ||
+        item.opCode.toUpperCase().includes(generalFilter) ||
+        item.airlineDisplay.toUpperCase().includes(generalFilter) ||
+        item.reg.toUpperCase().includes(generalFilter) ||
+        item.depIcao.toUpperCase().includes(generalFilter) ||
+        item.arrIcao.toUpperCase().includes(generalFilter);
 
-      if (q.includes('->')) {
-        const parts = q.split('->');
-        const fromPart = parts[0].trim();
-        const toPart = parts[1].trim();
+      const matchesFrom = fromQuery === '' ||
+        item.depIcao.toUpperCase().includes(fromQuery) ||
+        item.rawDep.includes(fromQuery) ||
+        (resolvedFrom !== '' && item.depIcao.toUpperCase() === resolvedFrom);
 
-        const matchFrom = fromPart === '' ||
-          item.depIcao.toUpperCase().includes(fromPart) ||
-          item.rawDep.includes(fromPart);
+      const matchesTo = toQuery === '' ||
+        item.arrIcao.toUpperCase().includes(toQuery) ||
+        item.rawArr.includes(toQuery) ||
+        (resolvedTo !== '' && item.arrIcao.toUpperCase() === resolvedTo);
 
-        const matchTo = toPart === '' ||
-          item.arrIcao.toUpperCase().includes(toPart) ||
-          item.rawArr.includes(toPart);
-
-        return matchFrom && matchTo;
-      }
-
-      return (
-        item.flight.toUpperCase().includes(q) ||
-        item.type.toUpperCase().includes(q) ||
-        item.opCode.toUpperCase().includes(q) ||
-        item.airlineDisplay.toUpperCase().includes(q) ||
-        item.reg.toUpperCase().includes(q) ||
-        item.depIcao.toUpperCase().includes(q) ||
-        item.arrIcao.toUpperCase().includes(q) ||
-        item.rawDep.includes(q) ||
-        item.rawArr.includes(q)
-      );
+      return matchesGeneral && matchesFrom && matchesTo;
     }
 
     function filterFlights() {
       let listContainer = document.getElementById('flight-list');
-      let query = document.getElementById('searchBox').value.trim();
+      let filter = document.getElementById('searchBox').value.trim().toUpperCase();
+      let fromQuery = document.getElementById('fromAirport').value.trim().toUpperCase();
+      let toQuery = document.getElementById('toAirport').value.trim().toUpperCase();
+
+      document.getElementById('clearRouteBtn').style.display = (fromQuery || toQuery) ? 'inline-block' : 'none';
+
+      const resolvedFrom = fromQuery.length === 3 ? resolveIcao(fromQuery) : '';
+      const resolvedTo = toQuery.length === 3 ? resolveIcao(toQuery) : '';
 
       let hidePhoto = document.getElementById('set-hidephoto').checked;
       let speedUnit = document.getElementById('set-speed').value;
@@ -658,11 +665,13 @@
       let altUnit = document.getElementById('set-alt').value;
       listContainer.innerHTML = '';
 
-      let filtered = flightDataStore.filter(item => matchesQuery(item, query));
+      let filtered = flightDataStore.filter(item =>
+        matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo)
+      );
 
       flightDataStore.forEach(item => {
         if (markers[item.flight]) {
-          let isVisible = matchesQuery(item, query);
+          let isVisible = matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo);
           if (isVisible) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
@@ -681,7 +690,7 @@
         if (idx > -1) {
           const [chosen] = filtered.splice(idx, 1);
           filtered.unshift(chosen);
-        } else if (query === '') {
+        } else if (filter === '' && fromQuery === '' && toQuery === '') {
           const rawMatch = flightDataStore.find(ac => ac.flight === selectedFlightId);
           if (rawMatch) filtered.unshift(rawMatch);
         }
