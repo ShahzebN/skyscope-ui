@@ -659,7 +659,7 @@
 
     function fetchRadarData() {
       fetch(FIREBASE_ENDPOINT)
-        .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline'); return res.json(); })
+        .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline (Check CORS / Firebase Rules)'); return res.json(); })
         .then(data => {
         let activeFlights = new Set();
         flightDataStore = [];
@@ -751,7 +751,11 @@
 
     function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
       const bounds = map.getBounds();
-      if (!bounds.contains([item.lat, item.lng])) return false;
+      // If bounds are not yet initialized or too small, don't filter out
+      if (bounds && bounds.isValid() && !bounds.contains([item.lat, item.lng])) {
+        // Allow if zoomed out wide or if explicitly searched
+        if (map.getZoom() > 3 && generalFilter === '' && fromQuery === '' && toQuery === '') return false;
+      }
 
       const matchesGeneral = generalFilter === '' ||
         item.flight.toUpperCase().includes(generalFilter) ||
@@ -869,7 +873,7 @@
           if (totalDist > 0) {
             progressPercent = Math.min(100, Math.max(0, (flownDist / totalDist) * 100));
           }
-          const distUnit = document.getElementById('set-dist') ? document.getElementById('set-dist'].value : 'Km';
+          const distUnit = document.getElementById('set-dist') ? document.getElementById('set-dist').value : 'Km';
           let multiplier = 1;
           let unitLabel = 'km';
           if (distUnit === 'Nm') { multiplier = 0.539957; unitLabel = 'nm'; }
@@ -951,7 +955,6 @@
     function fetchAircraftPhoto(flight, reg) {
       let box = document.getElementById('photo-box-' + flight);
       if (!box) return;
-      // Correct Planespotters public API endpoint URL (https://api.planespotters.net/pub/photos/reg/{reg})
       fetch('https://api.planespotters.net/pub/photos/reg/' + reg)
         .then(res => res.json())
         .then(data => {
