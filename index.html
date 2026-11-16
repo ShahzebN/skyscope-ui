@@ -156,6 +156,7 @@
       #sidebar { width: calc(100vw - 30px); height: calc(100vh - 150px); }
       #toggle-btn { left: calc(100vw - 55px); }
       #toggle-btn.collapsed { left: 15px; }
+      #busiest-airports-panel { top: 65px; right: 10px; width: 230px; font-size: 10px; }
       #bottom-dock { bottom: 10px; padding: 4px 10px; gap: 15px; }
       .dock-item { font-size: 9px; padding: 4px 6px; }
       .dock-icon { font-size: 15px; }
@@ -749,7 +750,6 @@
     }
 
     function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
-      // Dynamic viewport bounding box filtering (matches FR24 zoom-dependent behavior)
       const bounds = map.getBounds();
       if (!bounds.contains([item.lat, item.lng])) return false;
 
@@ -775,7 +775,6 @@
       return matchesGeneral && matchesFrom && matchesTo;
     }
 
-    // Performance-optimized 60FPS incremental sidebar renderer (avoids full innerHTML wipes)
     function filterFlights() {
       let listContainer = document.getElementById('flight-list');
       let filter = document.getElementById('searchBox').value.trim().toUpperCase();
@@ -870,7 +869,7 @@
           if (totalDist > 0) {
             progressPercent = Math.min(100, Math.max(0, (flownDist / totalDist) * 100));
           }
-          const distUnit = document.getElementById('set-dist') ? document.getElementById('set-dist').value : 'Km';
+          const distUnit = document.getElementById('set-dist') ? document.getElementById('set-dist'].value : 'Km';
           let multiplier = 1;
           let unitLabel = 'km';
           if (distUnit === 'Nm') { multiplier = 0.539957; unitLabel = 'nm'; }
@@ -952,8 +951,8 @@
     function fetchAircraftPhoto(flight, reg) {
       let box = document.getElementById('photo-box-' + flight);
       if (!box) return;
-      // Fixed Planespotters API v2 endpoint URL
-      fetch('https://api.planespotters.net/v2/photos/reg/' + reg)
+      // Correct Planespotters public API endpoint URL (https://api.planespotters.net/pub/photos/reg/{reg})
+      fetch('https://api.planespotters.net/pub/photos/reg/' + reg)
         .then(res => res.json())
         .then(data => {
           if (data && data.photos && data.photos.length > 0) {
