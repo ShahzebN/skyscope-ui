@@ -38,8 +38,16 @@
     .airport-tooltip.dest-lbl { color: #ffd700 !important; }
     .airport-tooltip::before { display: none !important; }
 
-    /* "Made by Shahzeb" Corner Watermark Badge */
-    #creator-watermark { position: absolute; bottom: 35px; right: 15px; background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 700; color: #8b949e; z-index: 999; pointer-events: none; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    /* Flightradar24-Style Floating Search Bar on Map */
+    #floating-search-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 340px; background: rgba(22, 27, 34, 0.92); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 8px; z-index: 2000; display: flex; align-items: center; padding: 8px 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.7); cursor: text; transition: border-color 0.2s, box-shadow 0.2s; }
+    #floating-search-bar:focus-within { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.25); }
+    .floating-search-icon { color: #8b949e; font-size: 16px; margin-right: 10px; display: flex; align-items: center; }
+    .floating-search-input { background: none; border: none; color: #fff; font-size: 13px; width: 100%; outline: none; }
+    .floating-search-input::placeholder { color: #8b949e; }
+    .floating-search-badge { background: #161b22; border: 1px solid #30363d; color: #8b949e; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
+
+    /* "Made by Shahzeb" Corner Watermark Badge (Positioned safely above bottom dock) */
+    #creator-watermark { position: absolute; bottom: 80px; right: 15px; background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 700; color: #8b949e; z-index: 999; pointer-events: none; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     #creator-watermark span { color: #00d2ff; }
 
     /* Original Sized Busiest Airports Panel (Floating Modal) */
@@ -73,11 +81,11 @@
       100% { transform: scale(1.5); opacity: 0; border-color: #00d2ff; }
     }
 
-    #sidebar { position: absolute; top: 15px; left: 15px; width: 340px; height: calc(100vh - 90px); background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); z-index: 1000; border-radius: 12px; border: 1px solid #2a323d; box-shadow: 0 12px 35px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease-in-out; }
-    #sidebar.collapsed { transform: translateX(-370px); }
+    #sidebar { position: absolute; top: 15px; left: 15px; width: 340px; height: calc(100vh - 90px); background: rgba(15, 18, 23, 0.96); backdrop-filter: blur(12px); z-index: 1000; border-radius: 12px; border: 1px solid #2a323d; box-shadow: 0 12px 35px rgba(0,0,0,0.8); display: flex; flex-direction: column; transition: transform 0.3s ease-in-out; transform: translateX(-370px); }
+    #sidebar.visible { transform: translateX(0); }
     
-    #toggle-btn { position: absolute; top: 15px; left: 365px; z-index: 1001; background: #161b22; color: #00d2ff; border: 1px solid #2a323d; border-radius: 8px; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.6); transition: left 0.3s ease-in-out; }
-    #toggle-btn.collapsed { left: 15px; }
+    #toggle-btn { position: absolute; top: 15px; left: 15px; z-index: 1001; background: #161b22; color: #00d2ff; border: 1px solid #2a323d; border-radius: 8px; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.6); transition: left 0.3s ease-in-out; }
+    #toggle-btn.visible { left: 365px; }
 
     #bottom-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 35px; padding: 6px 16px; display: flex; gap: 20px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
     .dock-item { display: flex; flex-direction: column; align-items: center; color: #c9d1d9; font-size: 11px; cursor: pointer; transition: 0.2s; padding: 6px 10px; border-radius: 8px; }
@@ -149,9 +157,7 @@
     #status { color: #3fb950; font-weight: bold; }
     
     @media (max-width: 600px) {
-      #sidebar { width: calc(100vw - 30px); height: calc(100vh - 150px); }
-      #toggle-btn { left: calc(100vw - 55px); }
-      #toggle-btn.collapsed { left: 15px; }
+      #floating-search-bar { width: calc(100vw - 120px); top: 12px; }
       #bottom-dock { bottom: 10px; padding: 4px 10px; gap: 15px; }
       .dock-item { font-size: 9px; padding: 4px 6px; }
       .dock-icon { font-size: 15px; }
@@ -159,7 +165,14 @@
   </style>
 </head>
 <body>
-  <button id="toggle-btn" onclick="toggleSidebar()">☰</button>
+  <!-- Floating FR24-Style Search Bar on Map (Click to Open Sidebar) -->
+  <div id="floating-search-bar" onclick="openSidebarFromSearch()">
+    <span class="floating-search-icon">🔍</span>
+    <input type="text" id="floatingSearchInput" class="floating-search-input" placeholder="Find flights, airports and more" onfocus="openSidebarFromSearch()">
+    <span class="floating-search-badge">/</span>
+  </div>
+
+  <button id="toggle-btn" class="visible" onclick="toggleSidebar()">☰</button>
 
   <div id="sidebar">
     <div class="sidebar-header">
@@ -244,7 +257,7 @@
     <div class="dock-item" onclick="toggleBusiestAirportsModal()"><span class="dock-icon">📊</span>Busiest</div>
   </div>
 
-  <!-- "Made by Shahzeb" Corner Watermark Badge -->
+  <!-- "Made by Shahzeb" Corner Watermark Badge (Positioned safely above bottom dock) -->
   <div id="creator-watermark">Made by <span>Shahzeb</span></div>
 
   <div id="weather-panel">
@@ -494,7 +507,7 @@
       }
     }
 
-    // DRAW ACTUAL FLOWN ROUTE TRAIL (Restored & Fixed)
+    // DRAW ACTUAL FLOWN ROUTE TRAIL
     function drawFlightRoute(ac) {
       routeLayerGroup.clearLayers();
       if (!ac) return;
@@ -538,14 +551,39 @@
       }
     }
 
+    // Clicking map hides sidebar & deselects
     map.on('click', () => {
       selectedFlightId = null;
       routeLayerGroup.clearLayers();
       updateMarkerHighlights();
-      filterFlights();
+      closeSidebar();
     });
 
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('toggle-btn').classList.toggle('collapsed'); setTimeout(() => { map.invalidateSize(); }, 300); }
+    function openSidebarFromSearch() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.getElementById('toggle-btn');
+      sidebar.classList.add('visible');
+      toggleBtn.classList.add('visible');
+      document.getElementById('searchBox').focus();
+      setTimeout(() => { map.invalidateSize(); }, 300);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.getElementById('toggle-btn');
+      sidebar.classList.toggle('visible');
+      toggleBtn.classList.toggle('visible');
+      setTimeout(() => { map.invalidateSize(); }, 300);
+    }
+
+    function closeSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.getElementById('toggle-btn');
+      sidebar.classList.remove('visible');
+      toggleBtn.classList.remove('visible');
+      setTimeout(() => { map.invalidateSize(); }, 300);
+    }
+
     function showShortcuts() { document.getElementById('search-shortcuts').style.display = 'block'; }
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
@@ -555,9 +593,9 @@
       box.classList.toggle('visible');
       const sidebar = document.getElementById('sidebar');
       const toggleBtn = document.getElementById('toggle-btn');
-      if (sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-        toggleBtn.classList.remove('collapsed');
+      if (!sidebar.classList.contains('visible')) {
+        sidebar.classList.add('visible');
+        toggleBtn.classList.add('visible');
         setTimeout(() => { map.invalidateSize(); }, 300);
       }
       if (box.classList.contains('visible')) {
@@ -904,13 +942,8 @@
       const acObj = flightDataStore.find(a => a.flight === flight);
       if (acObj) drawFlightRoute(acObj);
 
-      const sidebar = document.getElementById('sidebar');
-      const toggleBtn = document.getElementById('toggle-btn');
-      if (sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-        toggleBtn.classList.remove('collapsed');
-        setTimeout(() => { map.invalidateSize(); }, 300);
-      }
+      // Open sidebar and ensure selected flight card scrolls cleanly to the TOP
+      openSidebarFromSearch();
 
       filterFlights();
 
