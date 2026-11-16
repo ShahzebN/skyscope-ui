@@ -55,9 +55,9 @@
     .floating-search-input::placeholder { color: #8b949e; }
     .floating-search-badge { background: #161b22; border: 1px solid #30363d; color: #8b949e; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; }
 
-    /* "Made by Shahzeb" Corner Watermark Badge */
-    #creator-watermark { position: absolute; bottom: 80px; right: 15px; background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 700; color: #8b949e; z-index: 999; pointer-events: none; letter-spacing: 0.3px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-    #creator-watermark span { color: #00d2ff; }
+    /* "Made by Shahzeb" Header Badge */
+    .creator-header-badge { background: rgba(0, 210, 255, 0.12); border: 1px solid rgba(0, 210, 255, 0.35); color: #00d2ff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.4px; }
+    .creator-header-badge span { color: #fff; }
 
     /* Original Sized Busiest Airports Panel (Floating Modal) */
     #busiest-airports-panel { position: absolute; top: 15px; right: 15px; width: 320px; background: rgba(22, 27, 34, 0.96); backdrop-filter: blur(12px); z-index: 2500; border-radius: 12px; border: 1px solid #30363d; box-shadow: 0 15px 40px rgba(0,0,0,0.9); display: none; flex-direction: column; overflow: hidden; }
@@ -154,7 +154,7 @@
   <div id="sidebar">
     <div class="sidebar-header">
       <h2>SKYSCOPE PRO</h2>
-      <span id="ac-count" style="background: #00d2ff; color: #0c0f12; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 11px;">0</span>
+      <div class="creator-header-badge">Made by <span>Shahzeb</span></div>
     </div>
     <div class="sidebar-content">
       <div id="flight-list">
@@ -186,9 +186,6 @@
     <div class="dock-item" onclick="toggleWeatherMenu()"><span class="dock-icon">⛅</span>Weather</div>
     <div class="dock-item" onclick="toggleBusiestAirportsModal()"><span class="dock-icon">📊</span>Busiest</div>
   </div>
-
-  <!-- "Made by Shahzeb" Corner Watermark Badge (Positioned safely above bottom dock) -->
-  <div id="creator-watermark">Made by <span>Shahzeb</span></div>
 
   <div id="weather-panel">
     <div style="font-size:11px; color:#00d2ff; font-weight:bold; margin-bottom:8px; text-transform:uppercase;">Weather Layers</div>
@@ -313,20 +310,6 @@
       if (!icao || icao === '----') return null;
       return icaoCoords[icao.toUpperCase()] || null;
     }
-
-    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = deg2rad(lat2 - lat1);
-      const dLon = deg2rad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    function deg2rad(deg) { return deg * (Math.PI / 180); }
 
     function computeGreatCircle(start, end, segments = 40) {
       const toRad = d => d * Math.PI / 180;
@@ -728,8 +711,6 @@
         }
       });
 
-      document.getElementById('ac-count').innerText = filtered.length;
-
       if (selectedFlightId) {
         const idx = filtered.findIndex(ac => ac.flight === selectedFlightId);
         if (idx > -1) {
@@ -765,7 +746,7 @@
         let vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
         let vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
 
-        // Reintegrated Dynamic Progress Bar Calculations
+        // Dynamic Progress Bar Calculations
         const origCoords = getAirportCoords(ac.depIcao);
         const destCoords = getAirportCoords(ac.arrIcao);
         let progressPercent = 50;
@@ -810,7 +791,7 @@
           </div>
           <div class="reg-subtext">REG: ${ac.reg || 'N/A'}</div>
           
-          <!-- Reintegrated Flightradar24-Style Progress Bar Widget -->
+          <!-- Flightradar24-Style Progress Bar Widget -->
           <div class="route-progress-container">
             <div class="route-header-row">
               <span class="route-icao-text">${ac.depIcao} &rarr; ${ac.arrIcao}</span>
@@ -879,7 +860,7 @@
 
       const el = document.getElementById('card-' + flight);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' >> 0 });
         el.style.borderColor = '#00d2ff';
         el.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.35)';
       }
