@@ -194,7 +194,7 @@
       </div>
 
       <div id="flight-list">
-        <p style="color: #7f8c8d; text-align: center; margin-top: 40px;">Connecting to Cloud Relay...</p>
+        <p style="color: #7f8c8d; text-align: center; margin-top: 40px;">Connecting to Firebase Global Relay...</p>
       </div>
     </div>
     <div class="status-bar">
@@ -387,7 +387,7 @@
       return points;
     }
 
-    // Initialize map with global worldview
+    // Initialize Leaflet map with global worldview
     const map = L.map('map', { zoomControl: false }).setView([20.0, 0.0], 2);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 2, attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -586,7 +586,7 @@
         let activeFlights = new Set();
         flightDataStore = [];
 
-        if (!data) throw new Error('Awaiting ESP32 Uplink');
+        if (!data) throw new Error('Awaiting Firebase Global Relay');
 
         for (let key in data) {
           if (key === 'full_count' || key === 'version' || key === 'stats') continue;
@@ -662,7 +662,7 @@
         }
 
         let statEl = document.getElementById('status');
-        statEl.innerText = 'Live (Cloud Relay)'; statEl.style.color = '#3fb950';
+        statEl.innerText = 'Live (Firebase Global)'; statEl.style.color = '#3fb950';
         filterFlights();
       }).catch(err => {
         let statEl = document.getElementById('status');
