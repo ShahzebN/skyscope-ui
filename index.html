@@ -41,7 +41,7 @@
 
     #bottom-dock { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 35px; padding: 6px 16px; display: flex; gap: 20px; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
     .dock-item { display: flex; flex-direction: column; align-items: center; color: #c9d1d9; font-size: 11px; cursor: pointer; transition: 0.2s; padding: 6px 10px; border-radius: 8px; }
-    .dock-item:hover { color: #00d2ff; background: rgba(255,255,255,0.05); }
+    .dock-item:hover, .dock-item.active { color: #00d2ff; background: rgba(0, 210, 255, 0.08); }
     .dock-icon { font-size: 18px; margin-bottom: 2px; }
 
     #settings-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 3000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
@@ -64,17 +64,33 @@
     .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #2a323d; background: #161b22; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header h2 { color: #00d2ff; margin: 0; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; }
     
-    .search-container { position: relative; margin-bottom: 15px; }
-    .search-input { width: 100%; box-sizing: border-box; background: #161b22; border: 1px solid #30363d; color: #fff; padding: 10px 14px 10px 36px; border-radius: 8px; font-size: 13px; }
+    .search-container { position: relative; margin-bottom: 10px; }
+    .search-input { width: 100%; box-sizing: border-box; background: #161b22; border: 1px solid #30363d; color: #fff; padding: 10px 14px 10px 36px; border-radius: 8px; font-size: 13px; transition: border-color 0.2s; }
     .search-input:focus { outline: none; border-color: #00d2ff; }
     .search-icon { position: absolute; left: 12px; top: 11px; color: #7f8c8d; font-size: 14px; }
+
+    /* FROM / TO Route Filter Box */
+    .route-filter-box { background: #11161d; border: 1px solid #2a323d; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
+    .route-filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .route-filter-title { font-size: 10px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.6px; }
+    .route-clear-btn { background: none; border: none; color: #00d2ff; font-size: 11px; cursor: pointer; padding: 0; font-weight: 600; display: none; }
+    .route-clear-btn:hover { text-decoration: underline; }
+    .route-field-group { margin-bottom: 8px; }
+    .route-field-group:last-child { margin-bottom: 0; }
+    .route-field-label { display: block; font-size: 10px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .route-input-wrap { position: relative; display: flex; align-items: center; }
+    .route-plane-svg { position: absolute; left: 10px; width: 16px; height: 16px; stroke: #7f8c8d; fill: none; stroke-width: 1.8; pointer-events: none; transition: stroke 0.2s; }
+    .route-input { width: 100%; box-sizing: border-box; background: #161b22; border: 1.5px solid #30363d; color: #fff; padding: 8px 10px 8px 34px; border-radius: 7px; font-size: 12px; text-transform: uppercase; transition: border-color 0.2s, box-shadow 0.2s; }
+    .route-input::placeholder { text-transform: none; color: #6e7681; }
+    .route-input:focus { outline: none; border-color: #f5b400; box-shadow: 0 0 0 2px rgba(245, 180, 0, 0.18); }
+    .route-input-wrap:focus-within .route-plane-svg { stroke: #f5b400; }
     
     #search-shortcuts { position: absolute; top: 46px; left: 0; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 2000; display: none; max-height: 250px; overflow-y: auto; }
     .shortcut-category { padding: 8px 12px; font-size: 10px; color: #00d2ff; background: #21262d; text-transform: uppercase; font-weight: bold; border-bottom: 1px solid #30363d; }
     .shortcut-item { padding: 9px 14px; font-size: 13px; color: #c9d1d9; cursor: pointer; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; }
     .shortcut-item:hover { background: #30363d; color: #fff; }
 
-    .sidebar-content { padding: 18px; overflow-y: auto; flex-grow: 1; }
+    .sidebar-content { padding: 16px 18px; overflow-y: auto; flex-grow: 1; }
     .flight-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: 0.15s; }
     .flight-card:hover { border-color: #00d2ff; background: #1c2128; }
     .flight-title { font-size: 15px; font-weight: bold; color: #fff; display: flex; justify-content: space-between; align-items: center; }
@@ -115,14 +131,41 @@
     <div class="sidebar-content">
       <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, route, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
+        <input type="text" id="searchBox" class="search-input" placeholder="Search flight, airline, type..." onkeyup="filterFlights()" onfocus="showShortcuts()" onblur="hideShortcuts()">
         <div id="search-shortcuts">
           <div class="shortcut-category">Quick Filters</div>
-          <div class="shortcut-item" onmousedown="setSearchQuery('OPIS')"><span>📍 Origin/Dest (e.g. OPIS)</span><span style="color:#7f8c8d;">Route</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('UAE')"><span>🛫 Airline (e.g. UAE)</span><span style="color:#7f8c8d;">Airline</span></div>
+          <div class="shortcut-item" onmousedown="setSearchQuery('PIA')"><span>🛫 Airline (e.g. PIA)</span><span style="color:#7f8c8d;">Airline</span></div>
           <div class="shortcut-item" onmousedown="setSearchQuery('A388')"><span>🛩️ Aircraft Type (e.g. A388)</span><span style="color:#7f8c8d;">Type</span></div>
         </div>
       </div>
+
+      <!-- Airport Route Filter (FROM / TO) -->
+      <div class="route-filter-box" id="routeFilterBox">
+        <div class="route-filter-header">
+          <span class="route-filter-title">Airport Route Filter (ICAO / IATA)</span>
+          <button class="route-clear-btn" id="clearRouteBtn" onclick="clearRouteFilter()">Clear</button>
+        </div>
+        <div class="route-field-group">
+          <label class="route-field-label" for="fromAirport">From</label>
+          <div class="route-input-wrap">
+            <svg class="route-plane-svg" viewBox="0 0 24 24">
+              <path d="M2 19h20M4.5 14.5l3.5-1.5 5.5-5.5 3-1c1.1-.4 2.2.3 2.4 1.4.2 1-.4 1.9-1.4 2.3L9 14l-2.5 2-2-.5z"/>
+            </svg>
+            <input type="text" id="fromAirport" class="route-input" placeholder="Departure airport (e.g. OPIS)" oninput="filterFlights()">
+          </div>
+        </div>
+        <div class="route-field-group">
+          <label class="route-field-label" for="toAirport">To</label>
+          <div class="route-input-wrap">
+            <svg class="route-plane-svg" viewBox="0 0 24 24">
+              <path d="M2 19h20M4.5 8.5l2.5 2 8.5 3.8c1 .4 1.6 1.3 1.4 2.3-.2 1.1-1.3 1.8-2.4 1.4l-3-1-5.5-5.5-3.5-1.5z"/>
+            </svg>
+            <input type="text" id="toAirport" class="route-input" placeholder="Arrival airport (e.g. OMDB)" oninput="filterFlights()">
+          </div>
+        </div>
+      </div>
+
       <div id="flight-list">
         <p style="color: #7f8c8d; text-align: center; margin-top: 40px;">Connecting to Cloud Relay...</p>
       </div>
@@ -136,7 +179,7 @@
   <div id="bottom-dock">
     <div class="dock-item" onclick="openSettings()"><span class="dock-icon">⚙️</span>Settings</div>
     <div class="dock-item" onclick="toggleWeatherMenu()"><span class="dock-icon">⛅</span>Weather</div>
-    <div class="dock-item" onclick="document.getElementById('searchBox').focus()"><span class="dock-icon">🎛️</span>Filters</div>
+    <div class="dock-item" onclick="focusRouteFilters()"><span class="dock-icon">🎛️</span>Filters</div>
   </div>
 
   <div id="weather-panel">
@@ -337,7 +380,6 @@
       const planeCoords = [ac.lat, ac.lng];
 
       if (origCoords) {
-        // Solid cyan line from Origin Airport to Aircraft (flown path)
         L.polyline([origCoords, planeCoords], {
           color: '#00d2ff',
           weight: 3,
@@ -351,7 +393,6 @@
       }
 
       if (destCoords) {
-        // High-contrast dark backing + bright gold/yellow dashed line to Destination Airport
         L.polyline([planeCoords, destCoords], {
           color: '#000000',
           weight: 5,
@@ -384,6 +425,23 @@
     function hideShortcuts() { setTimeout(() => { document.getElementById('search-shortcuts').style.display = 'none'; }, 200); }
     function setSearchQuery(q) { document.getElementById('searchBox').value = q; filterFlights(); }
 
+    function focusRouteFilters() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.getElementById('toggle-btn');
+      if (sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        toggleBtn.classList.remove('collapsed');
+        setTimeout(() => { map.invalidateSize(); }, 300);
+      }
+      document.getElementById('fromAirport').focus();
+    }
+
+    function clearRouteFilter() {
+      document.getElementById('fromAirport').value = '';
+      document.getElementById('toAirport').value = '';
+      filterFlights();
+    }
+
     function buildPopupHtml(ac) {
       const vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
       const vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
@@ -409,7 +467,6 @@
       fetch(FIREBASE_ENDPOINT)
         .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline'); return res.json(); })
         .then(data => {
-        let count = 0;
         let activeFlights = new Set();
         flightDataStore = [];
 
@@ -436,11 +493,13 @@
           let vSpeedBase = ac[15] || 0;
           let type = ac[8] || 'Unknown';
           let reg = ac[9] || '';
-          let depIcao = resolveIcao(ac[11]);
-          let arrIcao = resolveIcao(ac[12]);
+          let rawDep = (ac[11] || '').toUpperCase();
+          let rawArr = (ac[12] || '').toUpperCase();
+          let depIcao = resolveIcao(rawDep);
+          let arrIcao = resolveIcao(rawArr);
           if (altBase < 50) altBase = 'GND';
 
-          const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, vSpeedBase, heading, reg, depIcao, arrIcao, type, lat, lng };
+          const acObj = { flight, opCode, airlineDisplay, logoUrl, altBase, speedBase, vSpeedBase, heading, reg, rawDep, rawArr, depIcao, arrIcao, type, lat, lng };
           flightDataStore.push(acObj);
 
           let popupContent = buildPopupHtml(acObj);
@@ -460,7 +519,6 @@
             });
             markers[flight] = marker;
           }
-          count++;
         }
 
         for (let f in markers) {
@@ -473,7 +531,6 @@
           else routeLayerGroup.clearLayers();
         }
 
-        document.getElementById('ac-count').innerText = count;
         let statEl = document.getElementById('status');
         statEl.innerText = 'Live (Cloud Relay)'; statEl.style.color = '#3fb950';
         filterFlights();
@@ -483,9 +540,43 @@
       });
     }
 
+    function matchesFilters(item, generalFilter, fromQuery, toQuery, resolvedFrom, resolvedTo) {
+      const matchesGeneral = generalFilter === '' ||
+        item.flight.toUpperCase().includes(generalFilter) ||
+        item.type.toUpperCase().includes(generalFilter) ||
+        item.opCode.toUpperCase().includes(generalFilter) ||
+        item.airlineDisplay.toUpperCase().includes(generalFilter) ||
+        item.reg.toUpperCase().includes(generalFilter) ||
+        item.depIcao.toUpperCase().includes(generalFilter) ||
+        item.arrIcao.toUpperCase().includes(generalFilter);
+
+      // If FROM is entered, match departure ICAO or IATA; if empty, allow all departures
+      const matchesFrom = fromQuery === '' ||
+        item.depIcao.toUpperCase().includes(fromQuery) ||
+        item.rawDep.includes(fromQuery) ||
+        (resolvedFrom !== '' && item.depIcao.toUpperCase() === resolvedFrom);
+
+      // If TO is entered, match arrival ICAO or IATA; if empty, allow all arrivals
+      const matchesTo = toQuery === '' ||
+        item.arrIcao.toUpperCase().includes(toQuery) ||
+        item.rawArr.includes(toQuery) ||
+        (resolvedTo !== '' && item.arrIcao.toUpperCase() === resolvedTo);
+
+      return matchesGeneral && matchesFrom && matchesTo;
+    }
+
     function filterFlights() {
       let listContainer = document.getElementById('flight-list');
-      let filter = document.getElementById('searchBox').value.toUpperCase();
+      let filter = document.getElementById('searchBox').value.trim().toUpperCase();
+      let fromQuery = document.getElementById('fromAirport').value.trim().toUpperCase();
+      let toQuery = document.getElementById('toAirport').value.trim().toUpperCase();
+
+      // Toggle Clear button visibility when FROM or TO has text
+      document.getElementById('clearRouteBtn').style.display = (fromQuery || toQuery) ? 'inline-block' : 'none';
+
+      const resolvedFrom = fromQuery.length === 3 ? resolveIcao(fromQuery) : '';
+      const resolvedTo = toQuery.length === 3 ? resolveIcao(toQuery) : '';
+
       let hidePhoto = document.getElementById('set-hidephoto').checked;
       let speedUnit = document.getElementById('set-speed').value;
       let vspeedUnit = document.getElementById('set-vspeed').value;
@@ -493,24 +584,13 @@
       listContainer.innerHTML = '';
 
       let filtered = flightDataStore.filter(item =>
-        item.flight.toUpperCase().includes(filter) ||
-        item.type.toUpperCase().includes(filter) ||
-        item.opCode.toUpperCase().includes(filter) ||
-        item.reg.toUpperCase().includes(filter) ||
-        item.depIcao.toUpperCase().includes(filter) ||
-        item.arrIcao.toUpperCase().includes(filter)
+        matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo)
       );
 
       flightDataStore.forEach(item => {
         if (markers[item.flight]) {
-          let matches = filter === '' ||
-            item.flight.toUpperCase().includes(filter) ||
-            item.type.toUpperCase().includes(filter) ||
-            item.opCode.toUpperCase().includes(filter) ||
-            item.reg.toUpperCase().includes(filter) ||
-            item.depIcao.toUpperCase().includes(filter) ||
-            item.arrIcao.toUpperCase().includes(filter);
-          if (matches) {
+          let isVisible = matchesFilters(item, filter, fromQuery, toQuery, resolvedFrom, resolvedTo);
+          if (isVisible) {
             if (!map.hasLayer(markers[item.flight])) markers[item.flight].addTo(map);
             let tooltipOn = document.getElementById('set-tooltip').checked;
             if (tooltipOn && !markers[item.flight].getTooltip()) markers[item.flight].bindTooltip(item.flight, { direction: 'top', offset: [0, -5] });
@@ -521,18 +601,24 @@
         }
       });
 
+      // Update badge count to reflect active filtered aircraft count
+      document.getElementById('ac-count').innerText = filtered.length;
+
       if (selectedFlightId) {
         const idx = filtered.findIndex(ac => ac.flight === selectedFlightId);
         if (idx > -1) {
           const [chosen] = filtered.splice(idx, 1);
           filtered.unshift(chosen);
-        } else {
+        } else if (filter === '' && fromQuery === '' && toQuery === '') {
           const rawMatch = flightDataStore.find(ac => ac.flight === selectedFlightId);
           if (rawMatch) filtered.unshift(rawMatch);
         }
       }
 
-      if (filtered.length === 0) { listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>'; return; }
+      if (filtered.length === 0) {
+        listContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; margin-top: 30px;">No matching aircraft found.</p>';
+        return;
+      }
 
       let displayLimit = filtered.slice(0, 50);
       displayLimit.forEach(ac => {
