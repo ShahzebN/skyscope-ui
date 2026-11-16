@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkyScope Pro - ME & Pakistan</title>
+  <title>SkyScope Pro - Global Airspace</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { margin: 0; padding: 0; background: #0c0f12; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #e1e1e1; overflow: hidden; }
@@ -387,9 +387,10 @@
       return points;
     }
 
-    const map = L.map('map', { zoomControl: false }).setView([26.0, 52.0], 5);
+    // Initialize map with global worldview
+    const map = L.map('map', { zoomControl: false }).setView([20.0, 0.0], 2);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 3, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 2, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
     // Weather layers with custom dark-mode styling class names
     const rainLayer = L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/256/{z}/{x}/{y}/2/1_1.png', { maxZoom: 18, opacity: 0.75, className: 'weather-rain-layer' });
