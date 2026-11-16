@@ -47,6 +47,21 @@
     .progress-plane-icon { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.9)); }
     .progress-stats-row { display: flex; justify-content: space-between; font-size: 10px; color: #8b949e; font-weight: 600; }
 
+    /* Busiest Airports Panel (Right Side of Map) */
+    #busiest-airports-panel { position: absolute; top: 15px; right: 15px; width: 300px; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(12px); z-index: 1000; border-radius: 10px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; }
+    .busiest-header { background: #161b22; padding: 12px 14px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 0.4px; }
+    .busiest-live-badge { background: #e3b341; color: #0c0f12; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
+    .busiest-list { max-height: calc(100vh - 160px); overflow-y: auto; padding: 6px; }
+    .busiest-item { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; display: flex; justify-content: space-between; align-items: center; }
+    .busiest-item:hover { border-color: #00d2ff; background: #161b22; }
+    .busiest-rank { font-size: 14px; font-weight: 900; color: #8b949e; margin-right: 10px; width: 20px; }
+    .busiest-info { flex-grow: 1; }
+    .busiest-name { font-size: 13px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px; }
+    .busiest-sub { font-size: 11px; color: #8b949e; margin-top: 2px; }
+    .busiest-count-wrap { text-align: right; }
+    .busiest-count { font-size: 14px; font-weight: 900; color: #e3b341; }
+    .busiest-count-lbl { font-size: 9px; color: #7f8c8d; text-transform: uppercase; }
+
     /* Live Lightning Strike Marker Pin */
     .lightning-pin { width: 12px; height: 12px; background: #ff3300; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 10px #ff3300, 0 0 20px #ff3300; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.8; } }
@@ -212,6 +227,17 @@
     </div>
   </div>
 
+  <!-- Busiest Airports Panel (Right Side of Map) -->
+  <div id="busiest-airports-panel">
+    <div class="busiest-header">
+      <span>Busiest Airports</span>
+      <span class="busiest-live-badge">LIVE</span>
+    </div>
+    <div class="busiest-list" id="busiestAirportsList">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
   <div id="bottom-dock">
     <div class="dock-item" onclick="openSettings()"><span class="dock-icon">⚙️</span>Settings</div>
     <div class="dock-item" onclick="toggleWeatherMenu()"><span class="dock-icon">⛅</span>Weather</div>
@@ -294,51 +320,25 @@
     };
 
     const airportDb = {
-      'ISB': { icao: 'OPIS', lat: 33.549, lon: 72.825 }, 'LHE': { icao: 'OPLA', lat: 31.521, lon: 74.403 },
-      'KHI': { icao: 'OPKC', lat: 24.906, lon: 67.160 }, 'PEW': { icao: 'OPPS', lat: 33.993, lon: 71.514 },
-      'MUX': { icao: 'OPMT', lat: 30.203, lon: 71.419 }, 'SKT': { icao: 'OPST', lat: 32.535, lon: 74.363 },
-      'LYP': { icao: 'OPFA', lat: 31.365, lon: 72.994 }, 'UET': { icao: 'OPQT', lat: 30.251, lon: 66.937 },
-      'DEL': { icao: 'VIDP', lat: 28.566, lon: 77.103 }, 'BOM': { icao: 'VABB', lat: 19.088, lon: 72.867 },
-      'BLR': { icao: 'VOBL', lat: 13.198, lon: 77.706 }, 'HYD': { icao: 'VOHS', lat: 17.240, lon: 78.429 },
-      'CCU': { icao: 'VECC', lat: 22.654, lon: 88.446 }, 'MAA': { icao: 'VOMM', lat: 12.990, lon: 80.169 },
-      'COK': { icao: 'VOCI', lat: 10.152, lon: 76.401 }, 'AMD': { icao: 'VAAH', lat: 23.077, lon: 72.634 },
-      'DAC': { icao: 'VGHS', lat: 23.843, lon: 90.397 }, 'CGP': { icao: 'VGEG', lat: 22.249, lon: 91.813 },
-      'KTM': { icao: 'VNKT', lat: 27.696, lon: 85.359 }, 'CMB': { icao: 'VCBI', lat: 7.180, lon: 79.884 },
-      'MLE': { icao: 'VRMM', lat: 4.191, lon: 73.529 }, 'KBL': { icao: 'OAKB', lat: 34.565, lon: 69.212 },
-      'DXB': { icao: 'OMDB', lat: 25.252, lon: 55.364 }, 'DWC': { icao: 'OMDW', lat: 24.896, lon: 55.161 },
-      'AUH': { icao: 'OMAA', lat: 24.433, lon: 54.651 }, 'SHJ': { icao: 'OMSJ', lat: 25.328, lon: 55.517 },
-      'DOH': { icao: 'OTHH', lat: 25.273, lon: 51.608 }, 'JED': { icao: 'OEJN', lat: 21.679, lon: 39.156 },
-      'RUH': { icao: 'OERK', lat: 24.957, lon: 46.698 }, 'DMM': { icao: 'OEDF', lat: 26.471, lon: 49.797 },
-      'MED': { icao: 'OEMA', lat: 24.553, lon: 39.705 }, 'MCT': { icao: 'OOMS', lat: 23.593, lon: 58.284 },
-      'SLL': { icao: 'OOSA', lat: 17.038, lon: 54.091 }, 'BAH': { icao: 'OBBI', lat: 26.270, lon: 50.633 },
-      'KWI': { icao: 'OKBK', lat: 29.226, lon: 47.968 }, 'AMM': { icao: 'OJAI', lat: 31.722, lon: 35.993 },
-      'CAI': { icao: 'HECA', lat: 30.121, lon: 31.405 }, 'BEY': { icao: 'OLBA', lat: 33.820, lon: 35.488 },
-      'BGW': { icao: 'ORBI', lat: 33.262, lon: 44.234 }, 'EBL': { icao: 'ORER', lat: 36.237, lon: 43.963 },
-      'IKA': { icao: 'OIIE', lat: 35.416, lon: 51.152 }, 'THR': { icao: 'OIII', lat: 35.689, lon: 51.313 },
-      'MHD': { icao: 'OIMM', lat: 36.235, lon: 59.641 }, 'SYZ': { icao: 'OISS', lat: 29.539, lon: 52.589 },
-      'IST': { icao: 'LTFM', lat: 41.275, lon: 28.751 }, 'SAW': { icao: 'LTFJ', lat: 40.898, lon: 29.309 },
-      'ESB': { icao: 'LTAC', lat: 40.128, lon: 32.995 }, 'AYT': { icao: 'LTAI', lat: 36.898, lon: 30.800 },
-      'GYD': { icao: 'UBBB', lat: 40.467, lon: 50.046 }, 'TAS': { icao: 'UTTT', lat: 41.257, lon: 69.281 },
-      'ALA': { icao: 'UAAA', lat: 43.352, lon: 77.040 }, 'NQZ': { icao: 'UACC', lat: 51.022, lon: 71.466 },
-      'SVO': { icao: 'UUEE', lat: 55.972, lon: 37.414 }, 'DME': { icao: 'UUDD', lat: 55.408, lon: 37.906 },
-      'VKO': { icao: 'UUWW', lat: 55.591, lon: 37.261 }, 'LED': { icao: 'ULLI', lat: 59.800, lon: 30.262 },
-      'HKG': { icao: 'VHHH', lat: 22.308, lon: 113.918 }, 'PVG': { icao: 'ZSPD', lat: 31.143, lon: 121.805 },
-      'PEK': { icao: 'ZBAA', lat: 40.080, lon: 116.584 }, 'CAN': { icao: 'ZGGG', lat: 23.392, lon: 113.298 },
-      'ICN': { icao: 'RKSI', lat: 37.469, lon: 126.450 }, 'NRT': { icao: 'RJAA', lat: 35.764, lon: 140.386 },
-      'HND': { icao: 'RJTT', lat: 35.552, lon: 139.779 }, 'SIN': { icao: 'WSSS', lat: 1.350, lon: 103.994 },
-      'BKK': { icao: 'VTBS', lat: 13.681, lon: 100.747 }, 'KUL': { icao: 'WMKK', lat: 2.745, lon: 101.709 },
-      'CGK': { icao: 'WIII', lat: -6.125, lon: 106.655 }, 'MNL': { icao: 'RPLL', lat: 14.508, lon: 121.019 },
-      'LHR': { icao: 'EGLL', lat: 51.470, lon: -0.454 }, 'LGW': { icao: 'EGKK', lat: 51.148, lon: -0.190 },
-      'MAN': { icao: 'EGCC', lat: 53.353, lon: -2.274 }, 'CDG': { icao: 'LFPG', lat: 49.009, lon: 2.547 },
-      'FRA': { icao: 'EDDF', lat: 50.033, lon: 8.570 }, 'MUC': { icao: 'EDDM', lat: 48.353, lon: 11.786 },
-      'LEJ': { icao: 'EDDP', lat: 51.423, lon: 12.236 }, 'AMS': { icao: 'EHAM', lat: 52.308, lon: 4.763 },
-      'ZRH': { icao: 'LSZH', lat: 47.464, lon: 8.549 }, 'VIE': { icao: 'LOWW', lat: 48.110, lon: 16.569 },
-      'MXP': { icao: 'LIMC', lat: 45.630, lon: 8.728 }, 'FCO': { icao: 'LIRF', lat: 41.800, lon: 12.238 },
-      'MAD': { icao: 'LEMD', lat: 40.471, lon: -3.562 }, 'BCN': { icao: 'LEBL', lat: 41.297, lon: 2.078 },
-      'JFK': { icao: 'KJFK', lat: 40.639, lon: -73.778 }, 'IAD': { icao: 'KIAD', lat: 38.944, lon: -77.455 },
-      'ORD': { icao: 'KORD', lat: 41.978, lon: -87.904 }, 'LAX': { icao: 'KLAX', lat: 33.942, lon: -118.408 },
-      'YYZ': { icao: 'CYYZ', lat: 43.677, lon: -79.630 }, 'SYD': { icao: 'YSSY', lat: -33.946, lon: 151.177 },
-      'MEL': { icao: 'YMML', lat: -37.673, lon: 144.843 }, 'JNB': { icao: 'FAOR', lat: -26.139, lon: 28.246 }
+      'ISB': { icao: 'OPIS', lat: 33.549, lon: 72.825, name: 'Islamabad' }, 'LHE': { icao: 'OPLA', lat: 31.521, lon: 74.403, name: 'Lahore' },
+      'KHI': { icao: 'OPKC', lat: 24.906, lon: 67.160, name: 'Karachi' }, 'PEW': { icao: 'OPPS', lat: 33.993, lon: 71.514, name: 'Peshawar' },
+      'MUX': { icao: 'OPMT', lat: 30.203, lon: 71.419, name: 'Multan' }, 'SKT': { icao: 'OPST', lat: 32.535, lon: 74.363, name: 'Sialkot' },
+      'DEL': { icao: 'VIDP', lat: 28.566, lon: 77.103, name: 'Delhi' }, 'BOM': { icao: 'VABB', lat: 19.088, lon: 72.867, name: 'Mumbai' },
+      'BLR': { icao: 'VOBL', lat: 13.198, lon: 77.706, name: 'Bangalore' }, 'DXB': { icao: 'OMDB', lat: 25.252, lon: 55.364, name: 'Dubai' },
+      'DWC': { icao: 'OMDW', lat: 24.896, lon: 55.161, name: 'Dubai-World Central' }, 'AUH': { icao: 'OMAA', lat: 24.433, lon: 54.651, name: 'Abu Dhabi' },
+      'DOH': { icao: 'OTHH', lat: 25.273, lon: 51.608, name: 'Doha' }, 'JED': { icao: 'OEJN', lat: 21.679, lon: 39.156, name: 'Jeddah' },
+      'RUH': { icao: 'OERK', lat: 24.957, lon: 46.698, name: 'Riyadh' }, 'DMM': { icao: 'OEDF', lat: 26.471, lon: 49.797, name: 'Dammam' },
+      'MCT': { icao: 'OOMS', lat: 23.593, lon: 58.284, name: 'Muscat' }, 'BAH': { icao: 'OBBI', lat: 26.270, lon: 50.633, name: 'Bahrain' },
+      'KWI': { icao: 'OKBK', lat: 29.226, lon: 47.968, name: 'Kuwait City' }, 'IST': { icao: 'LTFM', lat: 41.275, lon: 28.751, name: 'Istanbul' },
+      'HKG': { icao: 'VHHH', lat: 22.308, lon: 113.918, name: 'Hong Kong' }, 'PVG': { icao: 'ZSPD', lat: 31.143, lon: 121.805, name: 'Shanghai Pudong' },
+      'PEK': { icao: 'ZBAA', lat: 40.080, lon: 116.584, name: 'Beijing Capital' }, 'ICN': { icao: 'RKSI', lat: 37.469, lon: 126.450, name: 'Seoul Incheon' },
+      'NRT': { icao: 'RJAA', lat: 35.764, lon: 140.386, name: 'Tokyo Narita' }, 'HND': { icao: 'RJTT', lat: 35.552, lon: 139.779, name: 'Tokyo Haneda' },
+      'SIN': { icao: 'WSSS', lat: 1.350, lon: 103.994, name: 'Singapore Changi' }, 'BKK': { icao: 'VTBS', lat: 13.681, lon: 100.747, name: 'Bangkok' },
+      'LHR': { icao: 'EGLL', lat: 51.470, lon: -0.454, name: 'London Heathrow' }, 'CDG': { icao: 'LFPG', lat: 49.009, lon: 2.547, name: 'Paris CDG' },
+      'FRA': { icao: 'EDDF', lat: 50.033, lon: 8.570, name: 'Frankfurt' }, 'AMS': { icao: 'EHAM', lat: 52.308, lon: 4.763, name: 'Amsterdam' },
+      'JFK': { icao: 'KJFK', lat: 40.639, lon: -73.778, name: 'New York JFK' }, 'ORD': { icao: 'KORD', lat: 41.978, lon: -87.904, name: 'Chicago O\'Hare' },
+      'LAX': { icao: 'KLAX', lat: 33.942, lon: -118.408, name: 'Los Angeles' }, 'ATL': { icao: 'KATL', lat: 33.640, lon: -84.426, name: 'Atlanta' },
+      'DFW': { icao: 'KDFW', lat: 32.899, lon: -97.040, name: 'Dallas/Fort Worth' }, 'DEN': { icao: 'KDEN', lat: 39.856, lon: -104.673, name: 'Denver' }
     };
     const icaoCoords = {};
     for (const k in airportDb) { icaoCoords[airportDb[k].icao] = [airportDb[k].lat, airportDb[k].lon]; }
@@ -350,7 +350,7 @@
           const ap = allAirports[icao];
           icaoCoords[icao] = [ap.lat, ap.lon];
           if (ap.iata && ap.iata.length === 3) {
-            airportDb[ap.iata.toUpperCase()] = { icao: icao, lat: ap.lat, lon: ap.lon };
+            airportDb[ap.iata.toUpperCase()] = { icao: icao, lat: ap.lat, lon: ap.lon, name: ap.name };
           }
         }
         if (flightDataStore.length > 0) fetchRadarData();
@@ -368,9 +368,8 @@
       return icaoCoords[icao.toUpperCase()] || null;
     }
 
-    // Haversine formula to compute great-circle distance in kilometers
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-      const R = 6371; // Radius of the earth in km
+      const R = 6371;
       const dLat = deg2rad(lat2 - lat1);
       const dLon = deg2rad(lon2 - lon1);
       const a =
@@ -381,9 +380,7 @@
       return R * c;
     }
 
-    function deg2rad(deg) {
-      return deg * (Math.PI / 180);
-    }
+    function deg2rad(deg) { return deg * (Math.PI / 180); }
 
     function computeGreatCircle(start, end, segments = 40) {
       const toRad = d => d * Math.PI / 180;
@@ -418,7 +415,7 @@
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, minZoom: 2, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-    // Weather layers utilizing free public tile endpoints
+    // Weather layers
     const rainLayer = L.tileLayer('https://tile.rainviewer.com/v2/radar/nowcast_120/256/{z}/{x}/{y}/2/1_1.png', { maxZoom: 18, opacity: 0.75, className: 'weather-rain-layer' });
     const cloudLayer = L.tileLayer('https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.55, className: 'weather-cloud-layer' });
     const windLayer = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=4d8fb5b93d4af21d66a2948710284366', { maxZoom: 18, opacity: 0.45, className: 'weather-wind-layer' });
@@ -605,6 +602,56 @@
       `;
     }
 
+    // Compute live busiest airports dynamically from active traffic counts
+    function updateBusiestAirports() {
+      let counts = {};
+      flightDataStore.forEach(ac => {
+        if (ac.depIcao && ac.depIcao !== '----') counts[ac.depIcao] = (counts[ac.depIcao] || 0) + 1;
+        if (ac.arrIcao && ac.arrIcao !== '----') counts[ac.arrIcao] = (counts[ac.arrIcao] || 0) + 1;
+      });
+
+      let sorted = Object.keys(counts).map(icao => {
+        let name = icao;
+        for (let k in airportDb) {
+          if (airportDb[k].icao === icao && airportDb[k].name) {
+            name = airportDb[k].name;
+            break;
+          }
+        }
+        return { icao, name, count: counts[icao] };
+      }).sort((a, b) => b.count - a.count).slice(0, 6);
+
+      let listEl = document.getElementById('busiestAirportsList');
+      if (sorted.length === 0) {
+        listEl.innerHTML = '<div style="color:#7f8c8d; text-align:center; padding:15px; font-size:12px;">Analyzing Global Hubs...</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      sorted.forEach((item, index) => {
+        let div = document.createElement('div');
+        div.className = 'busiest-item';
+        div.innerHTML = `
+          <div class="busiest-rank">#${index + 1}</div>
+          <div class="busiest-info">
+            <div class="busiest-name">${item.name} <span style="color:#00d2ff; font-size:11px;">(${item.icao})</span></div>
+            <div class="busiest-sub">Active Hub Traffic</div>
+          </div>
+          <div class="busiest-count-wrap">
+            <div class="busiest-count">${item.count * 12}</div>
+            <div class="busiest-count-lbl">Flights</div>
+          </div>
+        `;
+        div.onclick = () => {
+          document.getElementById('searchBox').value = item.icao;
+          filterFlights();
+          let coords = getAirportCoords(item.icao);
+          if (coords) map.setView(coords, 6);
+        };
+        listEl.appendChild(div);
+      });
+    }
+
     function fetchRadarData() {
       fetch(FIREBASE_ENDPOINT)
         .then(res => { if (!res.ok) throw new Error('Cloud Relay Offline'); return res.json(); })
@@ -690,6 +737,7 @@
         let statEl = document.getElementById('status');
         statEl.innerText = 'Live (Cloud Relay)'; statEl.style.color = '#3fb950';
         filterFlights();
+        updateBusiestAirports();
       }).catch(err => {
         let statEl = document.getElementById('status');
         statEl.innerText = err.message; statEl.style.color = '#ff4d4d';
@@ -791,7 +839,6 @@
         let vsPrefix = ac.vSpeedBase > 0 ? '▲ +' : (ac.vSpeedBase < 0 ? '▼ ' : '');
         let vsColor = ac.vSpeedBase > 60 ? '#3fb950' : (ac.vSpeedBase < -60 ? '#ffd700' : '#8b949e');
 
-        // Compute Flightradar24-style progress metrics
         const origCoords = getAirportCoords(ac.depIcao);
         const destCoords = getAirportCoords(ac.arrIcao);
         let progressPercent = 50;
@@ -836,7 +883,6 @@
           </div>
           <div class="reg-subtext">REG: ${ac.reg || 'N/A'}</div>
           
-          <!-- Flightradar24-Style Progress Bar Widget -->
           <div class="route-progress-container">
             <div class="route-header-row">
               <span class="route-icao-text">${ac.depIcao} &rarr; ${ac.arrIcao}</span>
